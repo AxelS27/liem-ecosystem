@@ -326,7 +326,7 @@ async fn main() {
             }
         }
         Commands::Update => {
-            println!("Checking for updates from GitHub (AxelS27/liem-wallpaper)...");
+            println!("Checking for updates from GitHub (AxelS27/liem-ecosystem)...");
             match run_interactive_update() {
                 Ok(status) => {
                     println!("{status}");
