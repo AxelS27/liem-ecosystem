@@ -3,7 +3,7 @@
 
 [Setup]
 AppName=Liem Desktop Ecosystem
-AppVersion=0.1.4
+AppVersion=0.1.5
 AppPublisher=Liem Ecosystem Contributors
 DefaultDirName={userpf}\Liem Ecosystem
 DefaultGroupName=Liem Desktop Ecosystem
@@ -174,11 +174,13 @@ function NeedsAddPath(): Boolean;
 var
   Path: String;
   AppDir: String;
+  AppDirSemi: String;
 begin
   AppDir := ExpandConstant('{app}\Liem Wallpaper');
   if RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path) then
   begin
-    Result := Pos(Uppercase(AppDir), Uppercase(Path)) = 0;
+    AppDirSemi := ';' + AppDir + ';';
+    Result := (Pos(Uppercase(AppDirSemi), ';' + Uppercase(Path) + ';') = 0);
   end
   else
   begin
@@ -190,11 +192,13 @@ function NeedsAddPathBar(): Boolean;
 var
   Path: String;
   AppDir: String;
+  AppDirSemi: String;
 begin
   AppDir := ExpandConstant('{app}\Liem Bar');
   if RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path) then
   begin
-    Result := Pos(Uppercase(AppDir), Uppercase(Path)) = 0;
+    AppDirSemi := ';' + AppDir + ';';
+    Result := (Pos(Uppercase(AppDirSemi), ';' + Uppercase(Path) + ';') = 0);
   end
   else
   begin
@@ -206,11 +210,13 @@ function NeedsAddPathCli(): Boolean;
 var
   Path: String;
   AppDir: String;
+  AppDirSemi: String;
 begin
   AppDir := ExpandConstant('{app}');
   if RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path) then
   begin
-    Result := Pos(Uppercase(AppDir), Uppercase(Path)) = 0;
+    AppDirSemi := ';' + AppDir + ';';
+    Result := (Pos(Uppercase(AppDirSemi), ';' + Uppercase(Path) + ';') = 0);
   end
   else
   begin

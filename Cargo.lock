@@ -2733,7 +2733,7 @@ dependencies = [
 
 [[package]]
 name = "liem-bar"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "chrono",
  "libloading",
@@ -2752,7 +2752,7 @@ dependencies = [
 
 [[package]]
 name = "liem-cli"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "liem-common",
  "serde",
@@ -2811,7 +2811,7 @@ dependencies = [
 
 [[package]]
 name = "liem-sdk"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "libloading",
  "liem-common",
@@ -2895,7 +2895,7 @@ dependencies = [
 
 [[package]]
 name = "lw"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "clap",
  "liem-common",
@@ -2909,7 +2909,7 @@ dependencies = [
 
 [[package]]
 name = "lw-core"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "liem-common",
  "liem-config",
@@ -2923,11 +2923,11 @@ dependencies = [
 
 [[package]]
 name = "lw-plugin"
-version = "0.1.4"
+version = "0.1.5"
 
 [[package]]
 name = "lw-renderer"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "lw-core",
  "tracing",
@@ -2936,7 +2936,7 @@ dependencies = [
 
 [[package]]
 name = "lw-service"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "liem-common",
  "liem-ipc",
@@ -2954,7 +2954,7 @@ dependencies = [
 
 [[package]]
 name = "lw-transition"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "lw-core",
  "lw-renderer",
@@ -2964,7 +2964,7 @@ dependencies = [
 
 [[package]]
 name = "lw-wallpaper"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "lw-core",
  "windows 0.52.0",

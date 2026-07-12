@@ -171,8 +171,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         lw_service::ipc_event_bus::start_ecosystem_ipc_loop(ecosystem_config).await;
     });
 
-    // 6e. Spawn visual Slint Theme HUD window
-    lw_service::ui::spawn_theme_hud();
+    // 6e. Spawn visual Slint Theme HUD window (Disabled per user request)
+    // lw_service::ui::spawn_theme_hud();
 
     tracing::info!("[Lifecycle] State transitioned to Running");
 
