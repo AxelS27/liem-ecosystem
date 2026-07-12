@@ -3,7 +3,7 @@
 
 [Setup]
 AppName=Liem Desktop Ecosystem
-AppVersion=0.2.0
+AppVersion=0.2.1
 AppPublisher=Liem Ecosystem Contributors
 DefaultDirName={userpf}\Liem Ecosystem
 DefaultGroupName=Liem Desktop Ecosystem
@@ -34,6 +34,7 @@ Source: "apps\liem-wallpaper\assets\icon.ico"; DestDir: "{app}\Liem Wallpaper"; 
 ; Liem Bar files
 Source: "target\release\liem-bar.exe"; DestDir: "{app}\Liem Bar"; Components: bar; Flags: ignoreversion
 Source: "target\release\lb.exe"; DestDir: "{app}\Liem Bar"; Components: bar; Flags: ignoreversion
+Source: "apps\liem-bar\profiles\*"; DestDir: "{app}\Liem Bar\profiles"; Components: bar; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\Liem Wallpaper Service"; Filename: "{app}\Liem Wallpaper\lw-service.exe"; Components: wallpaper

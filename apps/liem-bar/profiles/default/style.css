@@ -1,0 +1,22 @@
+/* Liem Bar Waybar-like CSS styling sheet */
+#bar {
+    background-color: #111115;
+    border-color: #22222a;
+    border-radius: 8px;
+    opacity: 0.95;
+}
+
+#widget {
+    background-color: #1a1a24;
+    border-color: #333344;
+    border-radius: 4px;
+    color: #d1d1e0;
+    font-size: 14px;
+}
+
+#clock-time {
+    background-color: #1c2538;
+    border-color: #2b3a58;
+    color: #61afef;
+    font-size: 15px;
+}

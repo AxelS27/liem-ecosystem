@@ -1,0 +1,10 @@
+{
+  "bars": [
+    {
+      "monitor_id": "primary",
+      "position": "Top",
+      "layout_name": "default",
+      "auto_hide": false
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 
 [Setup]
 AppName=Liem Bar
-AppVersion=0.2.0
+AppVersion=0.2.1
 AppPublisher=Liem Bar Contributors
 DefaultDirName={userpf}\Liem Bar
 DefaultGroupName=Liem Bar
@@ -18,6 +18,7 @@ ChangesEnvironment=yes
 [Files]
 Source: "..\..\target\release\liem-bar.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\target\release\lb.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "profiles\*"; DestDir: "{app}\profiles"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\Liem Bar"; Filename: "{app}\liem-bar.exe"

@@ -1,0 +1,8 @@
+{
+  "type": "Row",
+  "children": [
+    { "type": "Widget", "widget_id": "clock.time" },
+    { "type": "Spacer" },
+    { "type": "Widget", "widget_id": "clock.date" }
+  ]
+}

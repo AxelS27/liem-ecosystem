@@ -21,9 +21,13 @@ thread_local! {
     static RENDERER_CELL: RefCell<Option<SlintRenderer>> = RefCell::new(None);
 }
 
-struct WindowRenderer<'a, 'b>(&'a MainWindow, &'b std::collections::HashMap<String, String>);
+struct WindowRenderer<'a, 'b, 'c>(
+    &'a MainWindow,
+    &'b std::collections::HashMap<String, String>,
+    &'c std::collections::HashMap<String, crate::core::theme::CssStyle>,
+);
 
-impl<'a, 'b> Renderer for WindowRenderer<'a, 'b> {
+impl<'a, 'b, 'c> Renderer for WindowRenderer<'a, 'b, 'c> {
     fn create_bar(
         &mut self,
         _monitor_id: &str,
@@ -42,11 +46,7 @@ impl<'a, 'b> Renderer for WindowRenderer<'a, 'b> {
         let h = size.height as f32;
         
         let positioned = crate::core::layout::evaluate_layout(root, 0.0, 0.0, w, h);
-        
-        let styles = RENDERER_CELL.with(|cell| {
-            let r_borrow = cell.borrow();
-            r_borrow.as_ref().map(|r| r.styles.clone()).unwrap_or_default()
-        });
+        let styles = self.2;
 
         let mut slint_widgets = Vec::new();
         for pw in positioned {
@@ -321,7 +321,7 @@ impl LiemBarApp {
 
                 // Proceed with normal tick delivery to modules
                 RENDERER_CELL.with(|cell| {
-                    if let Some(ref mut renderer) = *cell.borrow_mut() {
+                    if let Some(ref renderer) = *cell.borrow() {
                         if let Some(window) = renderer.get_windows().values().next() {
                             let window_weak = window.as_weak();
                             if let Some(window) = window_weak.upgrade() {
@@ -336,7 +336,7 @@ impl LiemBarApp {
                                 let mut manager = manager_arc.lock().unwrap();
                                 let dirty = manager.tick(&ctx);
                                 if dirty {
-                                    let mut wr = WindowRenderer(&window, &manager.remote_widget_data);
+                                    let mut wr = WindowRenderer(&window, &manager.remote_widget_data, &renderer.styles);
                                     let layout = layout_arc.lock().unwrap().clone();
                                     let _ = wr.render_layout_tree(&layout);
                                 }
