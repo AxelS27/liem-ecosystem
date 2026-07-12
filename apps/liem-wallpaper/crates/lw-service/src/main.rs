@@ -153,7 +153,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn check_and_perform_silent_update() {
     let current_version = env!("CARGO_PKG_VERSION");
-    let repo = "AxelS27/liem-wallpaper";
+    let repo = "AxelS27/liem-ecosystem";
 
     let ps_script = format!(
         "$version = '{}'; \

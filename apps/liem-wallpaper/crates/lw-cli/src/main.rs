@@ -465,7 +465,7 @@ async fn main() {
 
 fn run_interactive_update() -> Result<String, String> {
     let current_version = env!("CARGO_PKG_VERSION");
-    let repo = "AxelS27/liem-wallpaper";
+    let repo = "AxelS27/liem-ecosystem";
 
     let ps_script = format!(
         "$version = '{}'; \
