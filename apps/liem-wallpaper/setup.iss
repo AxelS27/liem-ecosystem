@@ -3,7 +3,7 @@
 
 [Setup]
 AppName=Liem Wallpaper
-AppVersion=0.2.2
+AppVersion=0.2.3
 AppPublisher=Liem Wallpaper Contributors
 DefaultDirName=D:\Liem Desktop Ecosystem\Liem Wallpaper
 DefaultGroupName=Liem Wallpaper

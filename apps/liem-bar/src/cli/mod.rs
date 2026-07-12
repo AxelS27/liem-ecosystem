@@ -117,10 +117,11 @@ pub fn validate_config(config_path: &Path) -> Result<(), String> {
     // 2. Check each profile's layouts exist
     for (name, profile) in &settings.profiles {
         for bar in &profile.bars {
-            if !settings.layouts.contains_key(&bar.layout_name) {
+            let layout_name = bar.layout_name.as_ref().unwrap_or(name);
+            if !settings.layouts.contains_key(layout_name) {
                 return Err(format!(
                     "Profile '{}' references layout '{}' which is not defined in layouts list",
-                    name, bar.layout_name
+                    name, layout_name
                 ));
             }
         }

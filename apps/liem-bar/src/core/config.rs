@@ -16,7 +16,8 @@ pub enum BarPosition {
 pub struct BarPlacementConfig {
     pub monitor_id: String,
     pub position: BarPosition,
-    pub layout_name: String,
+    #[serde(default)]
+    pub layout_name: Option<String>,
     #[serde(default)]
     pub auto_hide: bool,
 }
@@ -83,7 +84,7 @@ impl Default for LiemBarSettings {
                 bars: vec![BarPlacementConfig {
                     monitor_id: "primary".to_string(),
                     position: BarPosition::Top,
-                    layout_name: "default".to_string(),
+                    layout_name: None,
                     auto_hide: false,
                 }],
             },
@@ -234,22 +235,6 @@ fn post_process_loaded_config(
 
         std::fs::create_dir_all(&active_profile_dir).map_err(|e| e.to_string())?;
 
-        // Write default config.json
-        let default_profile_config = serde_json::json!({
-            "bars": [
-                {
-                    "monitor_id": "primary",
-                    "position": "Top",
-                    "layout_name": "default",
-                    "auto_hide": false
-                }
-            ]
-        });
-        std::fs::write(
-            active_profile_dir.join("config.json"),
-            serde_json::to_string_pretty(&default_profile_config).unwrap(),
-        ).map_err(|e| e.to_string())?;
-
         // Write default layout.json
         let default_layout = serde_json::json!({
             "type": "Row",
@@ -294,20 +279,14 @@ fn post_process_loaded_config(
         ).map_err(|e| e.to_string())?;
     }
 
-    // Now, load Profile placement config from config.json in active profile folder
-    let profile_cfg_path = active_profile_dir.join("config.json");
-    let profile_cfg_str = std::fs::read_to_string(&profile_cfg_path).map_err(|e| format!("Failed to read active profile config.json: {}", e))?;
-    let profile_placement: ProfileConfig = serde_json::from_str(&profile_cfg_str).map_err(|e| format!("Failed to parse active profile config.json: {}", e))?;
-    bar_settings.profiles.insert(bar_settings.active_profile.clone(), profile_placement);
-
     // Now, load Layout config from layout.json in active profile folder
     let layout_path = active_profile_dir.join("layout.json");
     let layout_str = std::fs::read_to_string(&layout_path).map_err(|e| format!("Failed to read active profile layout.json: {}", e))?;
     let layout_root: LayoutNode = serde_json::from_str(&layout_str).map_err(|e| format!("Failed to parse active profile layout.json: {}", e))?;
     bar_settings.layouts.insert(
-        "default".to_string(),
+        bar_settings.active_profile.clone(),
         LayoutConfig {
-            name: "default".to_string(),
+            name: bar_settings.active_profile.clone(),
             root: layout_root,
         },
     );
@@ -339,6 +318,7 @@ where
             .ok();
 
         let mut last_profile_modified = std::collections::HashMap::new();
+        let mut first_run = true;
 
         loop {
             tokio::time::sleep(Duration::from_secs(1)).await;
@@ -349,7 +329,9 @@ where
                 if let Ok(modified) = metadata.modified() {
                     if Some(modified) != last_modified {
                         last_modified = Some(modified);
-                        changed = true;
+                        if !first_run {
+                            changed = true;
+                        }
                     }
                 }
             }
@@ -360,7 +342,6 @@ where
                 let active_profile_dir = config_dir.join("profiles").join(&bar_settings.active_profile);
                 
                 let watch_files = vec![
-                    active_profile_dir.join("config.json"),
                     active_profile_dir.join("layout.json"),
                     active_profile_dir.join("style.css"),
                 ];
@@ -371,7 +352,9 @@ where
                             let last_mod = last_profile_modified.get(&file).cloned();
                             if Some(modified) != last_mod {
                                 last_profile_modified.insert(file.clone(), modified);
-                                changed = true;
+                                if !first_run {
+                                    changed = true;
+                                }
                             }
                         }
                     }
@@ -383,6 +366,8 @@ where
                     on_reload(new_settings);
                 }
             }
+
+            first_run = false;
         }
     });
 }

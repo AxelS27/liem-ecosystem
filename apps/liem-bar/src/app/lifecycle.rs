@@ -196,8 +196,9 @@ impl LiemBarApp {
         }
 
         // 6. Find layout and initialize active layout
-        let layout_name = &profile.bars[0].layout_name;
-        let layout = bar_settings.layouts.get(layout_name)
+        let layout_name = profile.bars[0].layout_name.clone()
+            .unwrap_or_else(|| active_profile.clone());
+        let layout = bar_settings.layouts.get(&layout_name)
             .ok_or_else(|| format!("Layout '{}' not found", layout_name))?
             .root.clone();
 
