@@ -7,4 +7,5 @@ edition = "2021"
 liem-common = { path = "../liem-common" }
 serde = { workspace = true }
 serde_json = { workspace = true }
+serde_yaml = { workspace = true }
 thiserror = { workspace = true }

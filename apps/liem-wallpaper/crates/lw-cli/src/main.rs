@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use lw_core::ipc::{IpcRequest, IpcResponse};
+use lw_core::Config;
 use std::path::PathBuf;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::windows::named_pipe::ClientOptions;
@@ -114,6 +115,12 @@ enum Commands {
     /// Check and perform application updates
     Update,
 
+    /// Manage configuration (import/export)
+    Config {
+        #[command(subcommand)]
+        action: ConfigAction,
+    },
+
     /// Sync visual theme (accent color and transition style) across ecosystem
     ThemeSync {
         /// Accent color hex code (e.g. #FF0055)
@@ -121,6 +128,20 @@ enum Commands {
         
         /// Transition style name (e.g. fade)
         transition: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum ConfigAction {
+    /// Export current configuration to a file
+    Export {
+        /// Output path for the configuration file (.json or .yaml)
+        path: PathBuf,
+    },
+    /// Import configuration from a file
+    Import {
+        /// Input path of the configuration file (.json or .yaml)
+        path: PathBuf,
     },
 }
 
@@ -313,6 +334,88 @@ async fn main() {
                 Err(e) => {
                     eprintln!("Update failed: {e}");
                     std::process::exit(1);
+                }
+            }
+        }
+        Commands::Config { action } => {
+            match action {
+                ConfigAction::Export { path } => {
+                    let default_p = Config::default_path();
+                    let current_cfg = Config::load_from_file(&default_p).unwrap_or_else(|_| {
+                        Config::default()
+                    });
+                    
+                    let path_str = path.to_string_lossy().to_string();
+                    let result_str = if path_str.ends_with(".yaml") || path_str.ends_with(".yml") {
+                        liem_config::exporter::export_to_yaml(&current_cfg)
+                    } else {
+                        liem_config::exporter::export_to_json(&current_cfg)
+                    };
+                    
+                    match result_str {
+                        Ok(content) => {
+                            if let Err(e) = std::fs::write(&path, content) {
+                                eprintln!("Failed to write export file: {e}");
+                                std::process::exit(1);
+                            }
+                            println!("Configuration exported successfully to {}", path.display());
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to serialize configuration: {e}");
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                ConfigAction::Import { path } => {
+                    if !path.exists() {
+                        eprintln!("Input file does not exist: {}", path.display());
+                        std::process::exit(1);
+                    }
+                    
+                    let content = match std::fs::read_to_string(&path) {
+                        Ok(c) => c,
+                        Err(e) => {
+                            eprintln!("Failed to read input file: {e}");
+                            std::process::exit(1);
+                        }
+                    };
+                    
+                    let path_str = path.to_string_lossy().to_string();
+                    let imported_cfg: Result<Config, String> = if path_str.ends_with(".yaml") || path_str.ends_with(".yml") {
+                        liem_config::exporter::import_from_yaml(&content)
+                    } else {
+                        liem_config::exporter::import_from_json(&content)
+                    };
+                    
+                    match imported_cfg {
+                        Ok(cfg) => {
+                            if let Err(e) = cfg.validate() {
+                                eprintln!("Invalid configuration file: {e:?}");
+                                std::process::exit(1);
+                            }
+                            
+                            let default_p = Config::default_path();
+                            if let Err(e) = cfg.save_to_file(&default_p) {
+                                eprintln!("Failed to write configuration: {e}");
+                                std::process::exit(1);
+                            }
+                            
+                            println!("Configuration imported successfully.");
+                            
+                            // Send reload event to running wallpaper daemon over local IPC
+                            println!("Notifying daemon to reload configuration...");
+                            let req = IpcRequest::UpdateConfig { config: cfg };
+                            if let Err(e) = send_request_and_print(req).await {
+                                eprintln!("Failed to notify daemon: {e}");
+                            } else {
+                                println!("Daemon updated successfully.");
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to parse configuration: {e}");
+                            std::process::exit(1);
+                        }
+                    }
                 }
             }
         }

@@ -12,6 +12,7 @@ serde_json = { workspace = true }
 clap = { workspace = true }
 liem-common = { path = "../../../../crates/liem-common" }
 liem-ipc = { path = "../../../../crates/liem-ipc" }
+liem-config = { path = "../../../../crates/liem-config" }
 
 [lints]
 workspace = true
