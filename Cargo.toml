@@ -3,6 +3,8 @@ resolver = "2"
 members = [
     "crates/*",
     "apps/liem-wallpaper/crates/*",
+    "apps/liem-bar",
+    "apps/liem-cli",
     "tests",
 ]
 exclude = [
@@ -43,6 +45,8 @@ windows = { version = "0.52", features = [
     "Win32_UI_Shell",
     "Win32_System_Registry",
     "Win32_Security",
+    "Win32_System_SystemInformation",
+    "Win32_System_Power",
     "Win32_System_LibraryLoader",
 ] }
 

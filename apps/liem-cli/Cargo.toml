@@ -1,0 +1,14 @@
+[package]
+name = "liem-cli"
+version = "0.1.3"
+edition = "2021"
+default-run = "liem"
+
+[[bin]]
+name = "liem"
+path = "src/main.rs"
+
+[dependencies]
+liem-common = { path = "../../crates/liem-common" }
+serde = { workspace = true }
+serde_json = { workspace = true }

@@ -21,25 +21,36 @@ Name: "custom"; Description: "Custom installation"; Flags: iscustom
 
 [Components]
 Name: "wallpaper"; Description: "Liem Wallpaper (GPU-Accelerated Background Manager)"; Types: full custom
-Name: "bar"; Description: "Liem Bar (Desktop Status Panel) [Coming Soon]"; Types: full custom; Flags: fixed
+Name: "bar"; Description: "Liem Bar (Desktop Status Panel)"; Types: full custom
 
 [Files]
+; Unified CLI
+Source: "target\release\liem.exe"; DestDir: "{app}"; Flags: ignoreversion
 ; Liem Wallpaper files
 Source: "target\release\lw-service.exe"; DestDir: "{app}\Liem Wallpaper"; Components: wallpaper; Flags: ignoreversion
 Source: "target\release\lw.exe"; DestDir: "{app}\Liem Wallpaper"; Components: wallpaper; Flags: ignoreversion
 Source: "apps\liem-wallpaper\shaders\*"; DestDir: "{app}\Liem Wallpaper\shaders"; Components: wallpaper; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "apps\liem-wallpaper\assets\icon.ico"; DestDir: "{app}\Liem Wallpaper"; Components: wallpaper; Flags: ignoreversion
+; Liem Bar files
+Source: "target\release\liem-bar.exe"; DestDir: "{app}\Liem Bar"; Components: bar; Flags: ignoreversion
+Source: "target\release\lb.exe"; DestDir: "{app}\Liem Bar"; Components: bar; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Liem Wallpaper Service"; Filename: "{app}\Liem Wallpaper\lw-service.exe"; Components: wallpaper
+Name: "{group}\Liem Bar"; Filename: "{app}\Liem Bar\liem-bar.exe"; Components: bar
+Name: "{group}\Liem CLI"; Filename: "{app}\liem.exe"
 
 [Run]
 ; Spawn wallpaper service after successful installation
 Filename: "{app}\Liem Wallpaper\lw-service.exe"; Description: "Start Liem Wallpaper Service"; Components: wallpaper; Flags: nowait postinstall runhidden
+Filename: "{app}\Liem Bar\liem-bar.exe"; Description: "Start Liem Bar"; Components: bar; Flags: nowait postinstall runhidden
 
 [Registry]
 ; Add Liem Wallpaper installation directory to User PATH
 Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\Liem Wallpaper"; Components: wallpaper; Check: NeedsAddPath
+Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\Liem Bar"; Components: bar; Check: NeedsAddPathBar
+; Add Unified CLI installation directory to User PATH
+Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Check: NeedsAddPathCli
 
 [Code]
 var
@@ -112,6 +123,8 @@ begin
   
   // Terminate any running instances of the daemon before installing
   Exec('taskkill.exe', '/F /IM lw-service.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /IM liem-bar.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /IM liem.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 
 procedure InitializeWizard();
@@ -151,37 +164,74 @@ begin
   end;
 end;
 
-procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+function NeedsAddPathBar(): Boolean;
 var
   Path: String;
   AppDir: String;
+begin
+  AppDir := ExpandConstant('{app}\Liem Bar');
+  if RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path) then
+  begin
+    Result := Pos(Uppercase(AppDir), Uppercase(Path)) = 0;
+  end
+  else
+  begin
+    Result := True;
+  end;
+end;
+
+function NeedsAddPathCli(): Boolean;
+var
+  Path: String;
+  AppDir: String;
+begin
+  AppDir := ExpandConstant('{app}');
+  if RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path) then
+  begin
+    Result := Pos(Uppercase(AppDir), Uppercase(Path)) = 0;
+  end
+  else
+  begin
+    Result := True;
+  end;
+end;
+
+procedure CleanPathSegment(AppDir: String);
+var
+  Path: String;
   PosAppDir: Integer;
+begin
+  if RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path) then
+  begin
+    PosAppDir := Pos(';' + Uppercase(AppDir), Uppercase(Path));
+    if PosAppDir > 0 then
+    begin
+      Delete(Path, PosAppDir, Length(';' + AppDir));
+      RegWriteExpandStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path);
+    end;
+    
+    PosAppDir := Pos(Uppercase(AppDir) + ';', Uppercase(Path));
+    if PosAppDir > 0 then
+    begin
+      Delete(Path, PosAppDir, Length(AppDir + ';'));
+      RegWriteExpandStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path);
+    end;
+    
+    PosAppDir := Pos(Uppercase(AppDir), Uppercase(Path));
+    if PosAppDir > 0 then
+    begin
+      Delete(Path, PosAppDir, Length(AppDir));
+      RegWriteExpandStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path);
+    end;
+  end;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usPostUninstall then
   begin
-    AppDir := ExpandConstant('{app}\Liem Wallpaper');
-    if RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path) then
-    begin
-      PosAppDir := Pos(';' + Uppercase(AppDir), Uppercase(Path));
-      if PosAppDir > 0 then
-      begin
-        Delete(Path, PosAppDir, Length(';' + AppDir));
-        RegWriteExpandStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path);
-      end;
-      
-      PosAppDir := Pos(Uppercase(AppDir) + ';', Uppercase(Path));
-      if PosAppDir > 0 then
-      begin
-        Delete(Path, PosAppDir, Length(AppDir + ';'));
-        RegWriteExpandStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path);
-      end;
-      
-      PosAppDir := Pos(Uppercase(AppDir), Uppercase(Path));
-      if PosAppDir > 0 then
-      begin
-        Delete(Path, PosAppDir, Length(AppDir));
-        RegWriteExpandStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path);
-      end;
-    end;
+    CleanPathSegment(ExpandConstant('{app}\Liem Wallpaper'));
+    CleanPathSegment(ExpandConstant('{app}\Liem Bar'));
+    CleanPathSegment(ExpandConstant('{app}'));
   end;
 end;

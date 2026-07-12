@@ -1,0 +1,60 @@
+export struct SlintWidget {
+    widget_id: string,
+    x: length,
+    y: length,
+    width: length,
+    height: length,
+    text: string,
+}
+
+export component MainWindow inherits Window {
+    // Window styling
+    no-frame: true;
+    background: transparent;
+
+    // Decoupled properties for Clock and Calendar widgets
+    in-out property <string> clock-time: "00:00:00";
+    in-out property <string> clock-date: "2026-07-12";
+    in-out property <string> calendar-text: "July 2026";
+
+    // Theme design tokens (colors, borders, corners, opacity)
+    in property <brush> surface-color: #111115;
+    in property <brush> border-color: #22222a;
+    in property <length> corner-radius: 8px;
+    in property <float> panel-opacity: 0.95;
+
+    // Repeater properties for dynamic rendering
+    in property <[SlintWidget]> widgets;
+
+    // Background bar panel
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: root.surface-color;
+        opacity: root.panel-opacity;
+        border-radius: root.corner-radius;
+        border-width: 1px;
+        border-color: root.border-color;
+    }
+
+    // Dynamic widget renderer loop
+    for widget in widgets : Rectangle {
+        x: widget.x;
+        y: widget.y;
+        width: widget.width;
+        height: widget.height;
+        background: #1a1a24;
+        border-radius: 4px;
+        border-width: 1px;
+        border-color: #333344;
+        clip: true;
+
+        Text {
+            text: widget.text;
+            color: #d1d1e0;
+            font-size: 14px;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+}

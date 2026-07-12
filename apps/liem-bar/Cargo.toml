@@ -1,0 +1,41 @@
+[package]
+name = "liem-bar"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+# UI Framework
+slint = { workspace = true, features = ["raw-window-handle-06"] }
+raw-window-handle = "0.6"
+
+# Windows APIs
+windows = { workspace = true }
+
+# Serialization/Deserialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Async Runtime
+tokio = { workspace = true }
+chrono = { workspace = true }
+
+# Dynamic Plugin Loading (Optional)
+libloading = { workspace = true, optional = true }
+
+# Internal workspace crates
+liem-common = { path = "../../crates/liem-common" }
+liem-config = { path = "../../crates/liem-config" }
+liem-ipc = { path = "../../crates/liem-ipc", optional = true }
+liem-sdk = { path = "../../crates/liem-sdk" }
+
+[build-dependencies]
+slint-build = "1.3"
+
+[features]
+default = ["tray", "media", "wallpaper", "community", "ipc"]
+tray = []
+media = []
+wallpaper = []
+community = ["dep:libloading"]
+ipc = ["dep:liem-ipc"]
