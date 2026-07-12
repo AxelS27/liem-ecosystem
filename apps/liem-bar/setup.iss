@@ -3,7 +3,7 @@
 
 [Setup]
 AppName=Liem Bar
-AppVersion=0.1.7
+AppVersion=0.1.8
 AppPublisher=Liem Bar Contributors
 DefaultDirName={userpf}\Liem Bar
 DefaultGroupName=Liem Bar

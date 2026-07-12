@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-use windows::Win32::Foundation::{HWND, POINT};
+use windows::Win32::Foundation::{HWND, POINT, RECT};
 use windows::Win32::UI::WindowsAndMessaging::{
     GetCursorPos, GetWindowLongW, SetWindowLongW, SetWindowPos, GWL_EXSTYLE, HWND_TOPMOST,
     SWP_NOACTIVATE, SWP_SHOWWINDOW, WS_EX_TOOLWINDOW, WS_EX_TOPMOST,
@@ -128,7 +128,6 @@ impl Renderer for SlintRenderer {
     ) -> Result<(), String> {
         let window = MainWindow::new().map_err(|e| e.to_string())?;
         window.show().map_err(|e| e.to_string())?;
-        register_window(window.window(), window.as_weak());
         register_active_window(window.as_weak());
 
         // 1. Enumerate monitors and locate matching display geometry
@@ -178,103 +177,190 @@ impl Renderer for SlintRenderer {
             }
         };
 
-        // 3. Extract raw Win32 HWND from Slint window handle
-        let slint_window = window.window();
-        let window_handle = slint_window.window_handle();
-        let handle = window_handle.window_handle()
-            .map_err(|e: raw_window_handle::HandleError| e.to_string())?;
+        // 3. Defer Win32 styling and HWND registration until event loop realization
+        let bounds_rect = monitor.bounds;
 
-        if let RawWindowHandle::Win32(win32_handle) = handle.as_raw() {
-            let hwnd = HWND(win32_handle.hwnd.get() as isize);
+        fn try_setup_window(
+            weak_window: slint::Weak<MainWindow>,
+            bounds_rect: RECT,
+            position: BarPosition,
+            x: i32,
+            y: i32,
+            w: i32,
+            h: i32,
+        ) {
+            if let Some(window) = weak_window.upgrade() {
+                let slint_window = window.window();
+                let window_handle = slint_window.window_handle();
+                match window_handle.window_handle() {
+                    Ok(handle) => {
+                        if let RawWindowHandle::Win32(win32_handle) = handle.as_raw() {
+                            let hwnd = HWND(win32_handle.hwnd.get() as isize);
+                            
+                            // Register window globally with HWND mapping
+                            register_window(window.window(), weak_window.clone());
 
-            unsafe {
-                // 4. Apply WS_EX_TOOLWINDOW (prevent taskbar button) and WS_EX_TOPMOST style flags
-                let ex_style = GetWindowLongW(hwnd, GWL_EXSTYLE);
-                let new_style = ex_style | WS_EX_TOOLWINDOW.0 as i32 | WS_EX_TOPMOST.0 as i32;
-                SetWindowLongW(hwnd, GWL_EXSTYLE, new_style);
+                            unsafe {
+                                // Apply WS_EX_TOOLWINDOW (prevent taskbar button) and WS_EX_TOPMOST style flags
+                                let ex_style = GetWindowLongW(hwnd, GWL_EXSTYLE);
+                                let new_style = ex_style | WS_EX_TOOLWINDOW.0 as i32 | WS_EX_TOPMOST.0 as i32;
+                                SetWindowLongW(hwnd, GWL_EXSTYLE, new_style);
 
-                // 5. Position and size the window topmost at monitor bounds
-                let _ = SetWindowPos(
-                    hwnd,
-                    HWND_TOPMOST,
-                    x,
-                    y,
-                    w,
-                    h,
-                    SWP_NOACTIVATE | SWP_SHOWWINDOW,
-                );
-            }
+                                // Position and size the window topmost at monitor bounds
+                                let _ = SetWindowPos(
+                                    hwnd,
+                                    HWND_TOPMOST,
+                                    x,
+                                    y,
+                                    w,
+                                    h,
+                                    SWP_NOACTIVATE | SWP_SHOWWINDOW,
+                                );
+                            }
 
-            // 6. Spawn background loop for Auto-Hide detection and slide animation
-            let hwnd_val = hwnd.0;
-            let bounds_rect = monitor.bounds;
-            tokio::spawn(async move {
-                let hwnd = HWND(hwnd_val);
-                let mut state = AutoHideState::Expanded;
-                let mut current_offset = 0i32;
-                let max_offset = h - 2;
+                            // Spawn background loop for Auto-Hide detection and slide animation
+                            let hwnd_val = hwnd.0;
+                            tokio::spawn(async move {
+                                let hwnd = HWND(hwnd_val);
+                                let mut state = AutoHideState::Expanded;
+                                let mut current_offset = 0i32;
+                                let max_offset = h - 2;
 
-                loop {
-                    tokio::time::sleep(tokio::time::Duration::from_millis(30)).await;
-                    let mut pt = POINT::default();
-                    if unsafe { GetCursorPos(&mut pt) }.is_ok() {
-                        let in_monitor = pt.x >= bounds_rect.left && pt.x <= bounds_rect.right;
-                        
-                        match position {
-                            BarPosition::Top => {
-                                let over_trigger = pt.y >= bounds_rect.top && pt.y <= bounds_rect.top + 4;
-                                let over_bar = pt.y >= y && pt.y <= y + h;
+                                loop {
+                                    tokio::time::sleep(tokio::time::Duration::from_millis(30)).await;
+                                    let mut pt = POINT::default();
+                                    if unsafe { GetCursorPos(&mut pt) }.is_ok() {
+                                        let in_monitor = pt.x >= bounds_rect.left && pt.x <= bounds_rect.right;
+                                        
+                                        match position {
+                                            BarPosition::Top => {
+                                                let over_trigger = pt.y >= bounds_rect.top && pt.y <= bounds_rect.top + 4;
+                                                let over_bar = pt.y >= y && pt.y <= y + h;
 
-                                match state {
-                                    AutoHideState::Expanded => {
-                                        if !over_bar && in_monitor {
-                                            state = AutoHideState::SlidingOut;
-                                        }
-                                    }
-                                    AutoHideState::Collapsed => {
-                                        if over_trigger && in_monitor {
-                                            state = AutoHideState::SlidingIn;
-                                        }
-                                    }
-                                    AutoHideState::SlidingOut => {
-                                        if current_offset < max_offset {
-                                            current_offset += 4;
-                                            if current_offset > max_offset {
-                                                current_offset = max_offset;
+                                                match state {
+                                                    AutoHideState::Expanded => {
+                                                        if !over_bar && in_monitor {
+                                                            state = AutoHideState::SlidingOut;
+                                                        }
+                                                    }
+                                                    AutoHideState::Collapsed => {
+                                                        if over_trigger && in_monitor {
+                                                            state = AutoHideState::SlidingIn;
+                                                        }
+                                                    }
+                                                    AutoHideState::SlidingOut => {
+                                                        if current_offset < max_offset {
+                                                            current_offset += 4;
+                                                            if current_offset > max_offset {
+                                                                current_offset = max_offset;
+                                                            }
+                                                            let target_y = y - current_offset;
+                                                            unsafe {
+                                                                let _ = SetWindowPos(hwnd, HWND_TOPMOST, x, target_y, w, h, SWP_NOACTIVATE);
+                                                            }
+                                                        } else {
+                                                            state = AutoHideState::Collapsed;
+                                                        }
+                                                    }
+                                                    AutoHideState::SlidingIn => {
+                                                        if current_offset > 0 {
+                                                            current_offset -= 4;
+                                                            if current_offset < 0 {
+                                                                current_offset = 0;
+                                                            }
+                                                            let target_y = y - current_offset;
+                                                            unsafe {
+                                                                let _ = SetWindowPos(hwnd, HWND_TOPMOST, x, target_y, w, h, SWP_NOACTIVATE);
+                                                            }
+                                                        } else {
+                                                            state = AutoHideState::Expanded;
+                                                        }
+                                                    }
+                                                }
                                             }
-                                            let target_y = y - current_offset;
-                                            unsafe {
-                                                let _ = SetWindowPos(hwnd, HWND_TOPMOST, x, target_y, w, h, SWP_NOACTIVATE);
+                                            BarPosition::Bottom => {
+                                                let over_trigger = pt.y >= bounds_rect.bottom - 4 && pt.y <= bounds_rect.bottom;
+                                                let over_bar = pt.y >= y && pt.y <= y + h;
+
+                                                match state {
+                                                    AutoHideState::Expanded => {
+                                                        if !over_bar && in_monitor {
+                                                            state = AutoHideState::SlidingOut;
+                                                        }
+                                                    }
+                                                    AutoHideState::Collapsed => {
+                                                        if over_trigger && in_monitor {
+                                                            state = AutoHideState::SlidingIn;
+                                                        }
+                                                    }
+                                                    AutoHideState::SlidingOut => {
+                                                        if current_offset < max_offset {
+                                                            current_offset += 4;
+                                                            if current_offset > max_offset {
+                                                                current_offset = max_offset;
+                                                            }
+                                                            let target_y = y + current_offset;
+                                                            unsafe {
+                                                                let _ = SetWindowPos(hwnd, HWND_TOPMOST, x, target_y, w, h, SWP_NOACTIVATE);
+                                                            }
+                                                        } else {
+                                                            state = AutoHideState::Collapsed;
+                                                        }
+                                                    }
+                                                    AutoHideState::SlidingIn => {
+                                                        if current_offset > 0 {
+                                                            current_offset -= 4;
+                                                            if current_offset < 0 {
+                                                                current_offset = 0;
+                                                            }
+                                                            let target_y = y + current_offset;
+                                                            unsafe {
+                                                                let _ = SetWindowPos(hwnd, HWND_TOPMOST, x, target_y, w, h, SWP_NOACTIVATE);
+                                                            }
+                                                        } else {
+                                                            state = AutoHideState::Expanded;
+                                                        }
+                                                    }
+                                                }
                                             }
-                                        } else {
-                                            state = AutoHideState::Collapsed;
-                                        }
-                                    }
-                                    AutoHideState::SlidingIn => {
-                                        if current_offset > 0 {
-                                            current_offset -= 4;
-                                            if current_offset < 0 {
-                                                current_offset = 0;
-                                            }
-                                            let target_y = y - current_offset;
-                                            unsafe {
-                                                let _ = SetWindowPos(hwnd, HWND_TOPMOST, x, target_y, w, h, SWP_NOACTIVATE);
-                                            }
-                                        } else {
-                                            state = AutoHideState::Expanded;
+                                            _ => {}
                                         }
                                     }
                                 }
-                            }
-                            _ => {}
+                            });
                         }
                     }
+                    Err(_) => {
+                        // Handle is not ready yet, retry in 20 milliseconds
+                        let weak_window_retry = weak_window.clone();
+                        slint::Timer::single_shot(std::time::Duration::from_millis(20), move || {
+                            try_setup_window(
+                                weak_window_retry,
+                                bounds_rect,
+                                position,
+                                x,
+                                y,
+                                w,
+                                h,
+                            );
+                        });
+                    }
                 }
-            });
-
-        } else {
-            return Err("Target platform is not Win32".to_string());
+            }
         }
+
+        let weak_window_init = window.as_weak();
+        slint::Timer::single_shot(std::time::Duration::from_millis(10), move || {
+            try_setup_window(
+                weak_window_init,
+                bounds_rect,
+                position,
+                x,
+                y,
+                w,
+                h,
+            );
+        });
 
         self.windows.insert(monitor_id.to_string(), window);
         Ok(())

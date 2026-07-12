@@ -11,7 +11,8 @@ fn get_config_path() -> PathBuf {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     std::env::set_var("SLINT_BACKEND", "winit");
     let config_path = get_config_path();
     let args: Vec<String> = std::env::args().collect();

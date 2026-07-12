@@ -323,12 +323,18 @@ impl LiemBarApp {
 
         self.timer = Some(timer);
 
-        // 2. Block on Slint event loop
-        let run_res = RENDERER_CELL.with(|cell| {
-            let mut r_borrow = cell.borrow_mut();
-            r_borrow.as_mut().unwrap().run()
-        });
-        run_res?;
+        // 2. Block on Slint event loop without holding RENDERER_CELL borrow
+        let window_weak = crate::core::renderer::get_active_windows().first().cloned();
+
+        if let Some(weak) = window_weak {
+            if let Some(window) = weak.upgrade() {
+                window.run().map_err(|e| e.to_string())?;
+            } else {
+                return Err("Active window was already destroyed before running".to_string());
+            }
+        } else {
+            return Err("No active windows to run".to_string());
+        }
 
         // 3. Restore the native Windows taskbar if auto-hide was toggled
         if let Some(ref settings) = self.settings {
