@@ -28,6 +28,9 @@ pub enum IpcResponse {
     StatusResponse {
         current_wallpaper: Option<PathBuf>,
         scheduler_active: bool,
+        scheduler_interval_mins: u32,
+        run_on_startup: bool,
+        wallpaper_dir: PathBuf,
         next_change_in_seconds: u32,
     },
     Error {

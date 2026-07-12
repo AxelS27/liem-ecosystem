@@ -40,9 +40,12 @@ async fn test_ipc_commands() {
     let wm = Arc::new(MockWallpaperManager::new());
     let server_wm = Arc::clone(&wm);
 
+    let test_pipe = r"\\.\pipe\liem-wallpaper-test";
+
     // Spawn server in background
     let server_handle = tokio::spawn(async move {
         let _ = run_ipc_server(
+            test_pipe,
             Arc::new(Mutex::new(Default::default())),
             server_wm,
             Arc::new(Mutex::new(lw_service::scheduler::SchedulerState::default())),
@@ -54,7 +57,7 @@ async fn test_ipc_commands() {
     tokio::time::sleep(tokio::time::Duration::from_millis(250)).await;
 
     // Connect client
-    let mut client = ClientOptions::new().open(PIPE_NAME).expect("Failed to connect to named pipe");
+    let mut client = ClientOptions::new().open(test_pipe).expect("Failed to connect to named pipe");
 
     // 1. Send GetStatus request
     let request = IpcRequest::GetStatus;
@@ -67,10 +70,22 @@ async fn test_ipc_commands() {
     let mut reader = BufReader::new(client);
     let mut line = String::new();
     reader.read_line(&mut line).await.unwrap();
+    println!("RAW LINE RECEIVED: {}", line);
 
     let response: IpcResponse = serde_json::from_str(&line).unwrap();
-    if let IpcResponse::StatusResponse { current_wallpaper, .. } = response {
+    if let IpcResponse::StatusResponse {
+        current_wallpaper,
+        scheduler_active,
+        scheduler_interval_mins,
+        run_on_startup,
+        wallpaper_dir,
+        next_change_in_seconds: _,
+    } = response {
         assert_eq!(current_wallpaper, Some(PathBuf::new()));
+        assert!(!scheduler_active);
+        assert_eq!(scheduler_interval_mins, 15);
+        assert!(run_on_startup);
+        assert_eq!(wallpaper_dir, PathBuf::new());
     } else {
         panic!("Expected StatusResponse, got {response:?}");
     }

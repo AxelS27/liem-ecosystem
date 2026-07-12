@@ -1,5 +1,5 @@
 use lw_core::logging::init_logging;
-use lw_service::ipc::run_ipc_server;
+use lw_service::ipc::{run_ipc_server, PIPE_NAME};
 use lw_service::scheduler::{run_scheduler, SchedulerState};
 use lw_wallpaper::DesktopWallpaperManager;
 use std::os::windows::process::CommandExt;
@@ -143,7 +143,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("[Lifecycle] State transitioned to Running");
 
     // 7. Start Named Pipe IPC Server loop (runs on main thread)
-    run_ipc_server(Arc::clone(&config), wallpaper_manager, scheduler_state).await?;
+    run_ipc_server(PIPE_NAME, Arc::clone(&config), wallpaper_manager, scheduler_state).await?;
 
     tracing::info!("[Lifecycle] State transitioned to Stopping");
     tracing::info!("[Lifecycle] State transitioned to Stopped");

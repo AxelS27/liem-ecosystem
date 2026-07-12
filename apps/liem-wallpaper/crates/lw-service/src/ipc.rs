@@ -36,6 +36,7 @@ pub const PIPE_NAME: &str = r"\\.\pipe\liem-wallpaper";
 
 /// Runs the IPC Named Pipe server command processing loop.
 pub async fn run_ipc_server<W>(
+    pipe_name: &str,
     config: Arc<std::sync::Mutex<lw_core::Config>>,
     wallpaper_manager: Arc<W>,
     scheduler_state: Arc<std::sync::Mutex<crate::scheduler::SchedulerState>>,
@@ -43,12 +44,12 @@ pub async fn run_ipc_server<W>(
 where
     W: WallpaperManager + 'static,
 {
-    info!("Starting IPC server on {}", PIPE_NAME);
+    info!("Starting IPC server on {}", pipe_name);
 
     let mut is_first = true;
     loop {
         let server =
-            ServerOptions::new().first_pipe_instance(is_first).create(PIPE_NAME).map_err(|e| {
+            ServerOptions::new().first_pipe_instance(is_first).create(pipe_name).map_err(|e| {
                 lw_core::LwError::Ipc(format!("Failed to create named pipe server: {e}"))
             })?;
 
@@ -119,9 +120,17 @@ where
                     (st.active, seconds)
                 };
 
+                let (wallpaper_dir, scheduler_interval_mins, run_on_startup) = {
+                    let cfg = config.lock().unwrap();
+                    (cfg.wallpaper_dir.clone(), cfg.scheduler.interval_mins, cfg.scheduler.run_on_startup)
+                };
+
                 IpcResponse::StatusResponse {
                     current_wallpaper: current,
                     scheduler_active: active,
+                    scheduler_interval_mins,
+                    run_on_startup,
+                    wallpaper_dir,
                     next_change_in_seconds: next_change,
                 }
             }

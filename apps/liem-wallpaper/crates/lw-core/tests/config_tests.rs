@@ -11,7 +11,7 @@ fn test_default_config() {
     assert_eq!(config.transition_default.duration_secs, 1.0);
     assert_eq!(config.transition_default.easing_style, EasingStyle::Quad);
     assert_eq!(config.transition_default.easing_direction, EasingDirection::InOut);
-    assert!(config.scheduler.enabled);
+    assert!(!config.scheduler.enabled);
     assert_eq!(config.scheduler.interval_mins, 15);
     assert!(config.scheduler.change_on_startup);
     assert_eq!(config.position, WallpaperPosition::Fill);

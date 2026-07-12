@@ -574,14 +574,20 @@ async fn send_request_and_print(request: IpcRequest) -> Result<(), String> {
         IpcResponse::StatusResponse {
             current_wallpaper,
             scheduler_active,
+            scheduler_interval_mins,
+            run_on_startup,
+            wallpaper_dir,
             next_change_in_seconds,
         } => {
             println!("Daemon Status:");
             let current_str = current_wallpaper
                 .map_or_else(|| "None".to_string(), |p| p.to_string_lossy().into_owned());
-            println!("  Current Wallpaper: {current_str}");
-            println!("  Scheduler Active:  {scheduler_active}");
-            println!("  Next Change In:    {next_change_in_seconds} seconds");
+            println!("  Current Wallpaper:   {current_str}");
+            println!("  Wallpaper Directory: {v}", v = wallpaper_dir.display());
+            println!("  Scheduler Active:    {scheduler_active}");
+            println!("  Interval (Minutes):  {scheduler_interval_mins}");
+            println!("  Run on Startup:      {run_on_startup}");
+            println!("  Next Change In:      {next_change_in_seconds} seconds");
         }
         IpcResponse::Error { message } => {
             return Err(format!("Daemon returned error: {message}"));
