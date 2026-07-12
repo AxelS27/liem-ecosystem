@@ -16,8 +16,8 @@ OutputBaseFilename=LiemWallpaperSetup
 ChangesEnvironment=yes
 
 [Files]
-Source: "target\release\lw-service.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "target\release\lw.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\target\release\lw-service.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\target\release\lw.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "shaders\*"; DestDir: "{app}\shaders"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "assets\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
