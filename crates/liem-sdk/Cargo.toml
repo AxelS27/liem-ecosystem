@@ -1,0 +1,16 @@
+[package]
+name = "liem-sdk"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+liem-common = { path = "../liem-common" }
+liem-config = { path = "../liem-config" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+libloading = { workspace = true }
+regex = { workspace = true }
+semver = { workspace = true }
