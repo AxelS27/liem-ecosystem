@@ -11,7 +11,7 @@ use liem_bar::core::renderer::Renderer;
 // Mock Renderer for testing
 struct MockRenderer;
 impl Renderer for MockRenderer {
-    fn create_bar(&mut self, _: &str, _: liem_bar::core::config::BarPosition, _: u32, _: u32, _: u32) -> Result<(), String> {
+    fn create_bar(&mut self, _: &str, _: liem_bar::core::config::BarPosition, _: u32, _: u32, _: u32, _: bool) -> Result<(), String> {
         Ok(())
     }
     fn render_layout_tree(&mut self, _: &LayoutNode) -> Result<(), String> {

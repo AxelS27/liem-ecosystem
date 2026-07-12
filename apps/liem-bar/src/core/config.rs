@@ -17,6 +17,8 @@ pub struct BarPlacementConfig {
     pub monitor_id: String,
     pub position: BarPosition,
     pub layout_name: String,
+    #[serde(default)]
+    pub auto_hide: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -77,6 +79,7 @@ impl Default for LiemBarSettings {
                     monitor_id: "primary".to_string(),
                     position: BarPosition::Top,
                     layout_name: "default".to_string(),
+                    auto_hide: false,
                 }],
             },
         );

@@ -31,6 +31,7 @@ impl<'a, 'b> Renderer for WindowRenderer<'a, 'b> {
         _width: u32,
         _height: u32,
         _margin: u32,
+        _auto_hide: bool,
     ) -> Result<(), String> {
         Ok(())
     }
@@ -147,6 +148,7 @@ impl LiemBarApp {
                     1920, // default width
                     40,   // default height
                     0,    // default margin
+                    bar.auto_hide,
                 )?;
             }
             Ok::<(), String>(())
@@ -274,6 +276,7 @@ impl LiemBarApp {
                                         1920,
                                         40,
                                         0,
+                                        bar.auto_hide,
                                     );
                                 }
                             }

@@ -19,6 +19,7 @@ pub trait Renderer {
         width: u32,
         height: u32,
         margin: u32,
+        auto_hide: bool,
     ) -> Result<(), String>;
 
     /// Render or update the hierarchical layout tree on the screen.
@@ -125,6 +126,7 @@ impl Renderer for SlintRenderer {
         width: u32,
         height: u32,
         margin: u32,
+        auto_hide: bool,
     ) -> Result<(), String> {
         let window = MainWindow::new().map_err(|e| e.to_string())?;
         window.show().map_err(|e| e.to_string())?;
@@ -188,6 +190,7 @@ impl Renderer for SlintRenderer {
             y: i32,
             w: i32,
             h: i32,
+            auto_hide: bool,
         ) {
             if let Some(window) = weak_window.upgrade() {
                 let slint_window = window.window();
@@ -218,116 +221,118 @@ impl Renderer for SlintRenderer {
                                 );
                             }
 
-                            // Spawn background loop for Auto-Hide detection and slide animation
-                            let hwnd_val = hwnd.0;
-                            tokio::spawn(async move {
-                                let hwnd = HWND(hwnd_val);
-                                let mut state = AutoHideState::Expanded;
-                                let mut current_offset = 0i32;
-                                let max_offset = h - 2;
+                            // Spawn background loop for Auto-Hide detection and slide animation only if auto-hide is enabled
+                            if auto_hide {
+                                let hwnd_val = hwnd.0;
+                                tokio::spawn(async move {
+                                    let hwnd = HWND(hwnd_val);
+                                    let mut state = AutoHideState::Expanded;
+                                    let mut current_offset = 0i32;
+                                    let max_offset = h - 2;
 
-                                loop {
-                                    tokio::time::sleep(tokio::time::Duration::from_millis(30)).await;
-                                    let mut pt = POINT::default();
-                                    if unsafe { GetCursorPos(&mut pt) }.is_ok() {
-                                        let in_monitor = pt.x >= bounds_rect.left && pt.x <= bounds_rect.right;
-                                        
-                                        match position {
-                                            BarPosition::Top => {
-                                                let over_trigger = pt.y >= bounds_rect.top && pt.y <= bounds_rect.top + 4;
-                                                let over_bar = pt.y >= y && pt.y <= y + h;
+                                    loop {
+                                        tokio::time::sleep(tokio::time::Duration::from_millis(30)).await;
+                                        let mut pt = POINT::default();
+                                        if unsafe { GetCursorPos(&mut pt) }.is_ok() {
+                                            let in_monitor = pt.x >= bounds_rect.left && pt.x <= bounds_rect.right;
+                                            
+                                            match position {
+                                                BarPosition::Top => {
+                                                    let over_trigger = pt.y >= bounds_rect.top && pt.y <= bounds_rect.top + 4;
+                                                    let over_bar = pt.y >= y && pt.y <= y + h;
 
-                                                match state {
-                                                    AutoHideState::Expanded => {
-                                                        if !over_bar && in_monitor {
-                                                            state = AutoHideState::SlidingOut;
+                                                    match state {
+                                                        AutoHideState::Expanded => {
+                                                            if !over_bar && in_monitor {
+                                                                state = AutoHideState::SlidingOut;
+                                                            }
                                                         }
-                                                    }
-                                                    AutoHideState::Collapsed => {
-                                                        if over_trigger && in_monitor {
-                                                            state = AutoHideState::SlidingIn;
+                                                        AutoHideState::Collapsed => {
+                                                            if over_trigger && in_monitor {
+                                                                state = AutoHideState::SlidingIn;
+                                                            }
                                                         }
-                                                    }
-                                                    AutoHideState::SlidingOut => {
-                                                        if current_offset < max_offset {
-                                                            current_offset += 4;
-                                                            if current_offset > max_offset {
-                                                                current_offset = max_offset;
+                                                        AutoHideState::SlidingOut => {
+                                                            if current_offset < max_offset {
+                                                                current_offset += 4;
+                                                                if current_offset > max_offset {
+                                                                    current_offset = max_offset;
+                                                                }
+                                                                let target_y = y - current_offset;
+                                                                unsafe {
+                                                                    let _ = SetWindowPos(hwnd, HWND_TOPMOST, x, target_y, w, h, SWP_NOACTIVATE);
+                                                                }
+                                                            } else {
+                                                                state = AutoHideState::Collapsed;
                                                             }
-                                                            let target_y = y - current_offset;
-                                                            unsafe {
-                                                                let _ = SetWindowPos(hwnd, HWND_TOPMOST, x, target_y, w, h, SWP_NOACTIVATE);
-                                                            }
-                                                        } else {
-                                                            state = AutoHideState::Collapsed;
                                                         }
-                                                    }
-                                                    AutoHideState::SlidingIn => {
-                                                        if current_offset > 0 {
-                                                            current_offset -= 4;
-                                                            if current_offset < 0 {
-                                                                current_offset = 0;
+                                                        AutoHideState::SlidingIn => {
+                                                            if current_offset > 0 {
+                                                                current_offset -= 4;
+                                                                if current_offset < 0 {
+                                                                    current_offset = 0;
+                                                                }
+                                                                let target_y = y - current_offset;
+                                                                unsafe {
+                                                                    let _ = SetWindowPos(hwnd, HWND_TOPMOST, x, target_y, w, h, SWP_NOACTIVATE);
+                                                                }
+                                                            } else {
+                                                                state = AutoHideState::Expanded;
                                                             }
-                                                            let target_y = y - current_offset;
-                                                            unsafe {
-                                                                let _ = SetWindowPos(hwnd, HWND_TOPMOST, x, target_y, w, h, SWP_NOACTIVATE);
-                                                            }
-                                                        } else {
-                                                            state = AutoHideState::Expanded;
                                                         }
                                                     }
                                                 }
-                                            }
-                                            BarPosition::Bottom => {
-                                                let over_trigger = pt.y >= bounds_rect.bottom - 4 && pt.y <= bounds_rect.bottom;
-                                                let over_bar = pt.y >= y && pt.y <= y + h;
+                                                BarPosition::Bottom => {
+                                                    let over_trigger = pt.y >= bounds_rect.bottom - 4 && pt.y <= bounds_rect.bottom;
+                                                    let over_bar = pt.y >= y && pt.y <= y + h;
 
-                                                match state {
-                                                    AutoHideState::Expanded => {
-                                                        if !over_bar && in_monitor {
-                                                            state = AutoHideState::SlidingOut;
+                                                    match state {
+                                                        AutoHideState::Expanded => {
+                                                            if !over_bar && in_monitor {
+                                                                state = AutoHideState::SlidingOut;
+                                                            }
                                                         }
-                                                    }
-                                                    AutoHideState::Collapsed => {
-                                                        if over_trigger && in_monitor {
-                                                            state = AutoHideState::SlidingIn;
+                                                        AutoHideState::Collapsed => {
+                                                            if over_trigger && in_monitor {
+                                                                state = AutoHideState::SlidingIn;
+                                                            }
                                                         }
-                                                    }
-                                                    AutoHideState::SlidingOut => {
-                                                        if current_offset < max_offset {
-                                                            current_offset += 4;
-                                                            if current_offset > max_offset {
-                                                                current_offset = max_offset;
+                                                        AutoHideState::SlidingOut => {
+                                                            if current_offset < max_offset {
+                                                                current_offset += 4;
+                                                                if current_offset > max_offset {
+                                                                    current_offset = max_offset;
+                                                                }
+                                                                let target_y = y + current_offset;
+                                                                unsafe {
+                                                                    let _ = SetWindowPos(hwnd, HWND_TOPMOST, x, target_y, w, h, SWP_NOACTIVATE);
+                                                                }
+                                                            } else {
+                                                                state = AutoHideState::Collapsed;
                                                             }
-                                                            let target_y = y + current_offset;
-                                                            unsafe {
-                                                                let _ = SetWindowPos(hwnd, HWND_TOPMOST, x, target_y, w, h, SWP_NOACTIVATE);
-                                                            }
-                                                        } else {
-                                                            state = AutoHideState::Collapsed;
                                                         }
-                                                    }
-                                                    AutoHideState::SlidingIn => {
-                                                        if current_offset > 0 {
-                                                            current_offset -= 4;
-                                                            if current_offset < 0 {
-                                                                current_offset = 0;
+                                                        AutoHideState::SlidingIn => {
+                                                            if current_offset > 0 {
+                                                                current_offset -= 4;
+                                                                if current_offset < 0 {
+                                                                    current_offset = 0;
+                                                                }
+                                                                let target_y = y + current_offset;
+                                                                unsafe {
+                                                                    let _ = SetWindowPos(hwnd, HWND_TOPMOST, x, target_y, w, h, SWP_NOACTIVATE);
+                                                                }
+                                                            } else {
+                                                                state = AutoHideState::Expanded;
                                                             }
-                                                            let target_y = y + current_offset;
-                                                            unsafe {
-                                                                let _ = SetWindowPos(hwnd, HWND_TOPMOST, x, target_y, w, h, SWP_NOACTIVATE);
-                                                            }
-                                                        } else {
-                                                            state = AutoHideState::Expanded;
                                                         }
                                                     }
                                                 }
+                                                _ => {}
                                             }
-                                            _ => {}
                                         }
                                     }
-                                }
-                            });
+                                });
+                            }
                         }
                     }
                     Err(_) => {
@@ -342,6 +347,7 @@ impl Renderer for SlintRenderer {
                                 y,
                                 w,
                                 h,
+                                auto_hide,
                             );
                         });
                     }
@@ -359,6 +365,7 @@ impl Renderer for SlintRenderer {
                 y,
                 w,
                 h,
+                auto_hide,
             );
         });
 
