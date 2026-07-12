@@ -5,6 +5,11 @@ export struct SlintWidget {
     width: length,
     height: length,
     text: string,
+    background_color: brush,
+    border_color: brush,
+    border_radius: length,
+    text_color: color,
+    font_size: length,
 }
 
 export component MainWindow inherits Window {
@@ -43,16 +48,16 @@ export component MainWindow inherits Window {
         y: widget.y;
         width: widget.width;
         height: widget.height;
-        background: #1a1a24;
-        border-radius: 4px;
+        background: widget.background_color;
+        border-radius: widget.border_radius;
         border-width: 1px;
-        border-color: #333344;
+        border-color: widget.border_color;
         clip: true;
 
         Text {
             text: widget.text;
-            color: #d1d1e0;
-            font-size: 14px;
+            color: widget.text_color;
+            font-size: widget.font_size;
             horizontal-alignment: center;
             vertical-alignment: center;
         }

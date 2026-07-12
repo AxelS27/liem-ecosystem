@@ -103,10 +103,7 @@ pub fn validate_config(config_path: &Path) -> Result<(), String> {
         return Err(format!("Configuration file not found at {:?}", config_path));
     }
 
-    let content = fs::read_to_string(config_path)
-        .map_err(|e| format!("Failed to read configuration file: {}", e))?;
-
-    let settings: LiemBarSettings = serde_json::from_str(&content)
+    let (_, settings) = crate::core::config::load_or_create_bar_config(config_path)
         .map_err(|e| format!("Configuration schema validation failed: {}", e))?;
 
     // 1. Check active profile exists

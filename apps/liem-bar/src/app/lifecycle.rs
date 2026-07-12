@@ -43,6 +43,11 @@ impl<'a, 'b> Renderer for WindowRenderer<'a, 'b> {
         
         let positioned = crate::core::layout::evaluate_layout(root, 0.0, 0.0, w, h);
         
+        let styles = RENDERER_CELL.with(|cell| {
+            let r_borrow = cell.borrow();
+            r_borrow.as_ref().map(|r| r.styles.clone()).unwrap_or_default()
+        });
+
         let mut slint_widgets = Vec::new();
         for pw in positioned {
             let text = match pw.widget_id.as_str() {
@@ -58,6 +63,8 @@ impl<'a, 'b> Renderer for WindowRenderer<'a, 'b> {
                 }
             };
             
+            let (bg, border, radius, text_color, font_sz) = crate::core::theme::get_widget_style(&styles, &pw.widget_id);
+
             slint_widgets.push(crate::core::renderer::SlintWidget {
                 widget_id: pw.widget_id.into(),
                 x: pw.bounds_x,
@@ -65,6 +72,11 @@ impl<'a, 'b> Renderer for WindowRenderer<'a, 'b> {
                 width: pw.bounds_w,
                 height: pw.bounds_h,
                 text: text.into(),
+                background_color: bg,
+                border_color: border,
+                border_radius: radius,
+                text_color,
+                font_size: font_sz,
             });
         }
         
@@ -73,6 +85,10 @@ impl<'a, 'b> Renderer for WindowRenderer<'a, 'b> {
     }
 
     fn apply_theme(&mut self, _theme: &ThemeConfig) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn apply_css(&mut self, _styles: &std::collections::HashMap<String, crate::core::theme::CssStyle>) -> Result<(), String> {
         Ok(())
     }
 
@@ -190,16 +206,21 @@ impl LiemBarApp {
         // 7. Initialize configuration hot-reload watcher
         let config_path = self.config_path.clone();
         let layout_name_clone = layout_name.clone();
-        let active_profile_clone = active_profile.clone();
         let active_layout_arc = self.active_layout.clone();
         crate::core::config::watch_config_file(&config_path, move |new_settings| {
-            println!("Configuration changes detected! Hot-reloading active profile layouts...");
-            if let Some(_profile) = new_settings.profiles.get(&active_profile_clone) {
-                if let Some(layout_cfg) = new_settings.layouts.get(&layout_name_clone) {
-                    let mut layout_guard = active_layout_arc.lock().unwrap();
-                    *layout_guard = layout_cfg.root.clone();
-                }
+            println!("Configuration changes detected! Hot-reloading active profile layouts and styles...");
+            if let Some(layout_cfg) = new_settings.layouts.get(&layout_name_clone) {
+                let mut layout_guard = active_layout_arc.lock().unwrap();
+                *layout_guard = layout_cfg.root.clone();
             }
+
+            RENDERER_CELL.with(|cell| {
+                if let Some(ref mut renderer) = *cell.borrow_mut() {
+                    let _ = renderer.apply_css(&new_settings.styles);
+                    let layout = active_layout_arc.lock().unwrap().clone();
+                    let _ = renderer.render_layout_tree(&layout);
+                }
+            });
         });
 
         // 8. Start Ecosystem event client sync loop (takes a list of weak handles dynamically)
@@ -211,13 +232,15 @@ impl LiemBarApp {
             crate::integrations::ecosystem::start_ecosystem_client(self.module_manager.clone());
         }
 
-        // 9. Apply active profile theme styling
-        if let Some(theme) = bar_settings.themes.get("default") {
-            RENDERER_CELL.with(|cell| {
-                let mut r_borrow = cell.borrow_mut();
-                let _ = r_borrow.as_mut().unwrap().apply_theme(theme);
-            });
-        }
+        // 9. Apply active profile theme styling (CSS and legacy theme)
+        RENDERER_CELL.with(|cell| {
+            let mut r_borrow = cell.borrow_mut();
+            let renderer = r_borrow.as_mut().unwrap();
+            let _ = renderer.apply_css(&bar_settings.styles);
+            if let Some(theme) = bar_settings.themes.get("default") {
+                let _ = renderer.apply_theme(theme);
+            }
+        });
 
         // 10. If configured, enable auto-hide on the native Windows taskbar
         if bar_settings.manage_windows_taskbar {

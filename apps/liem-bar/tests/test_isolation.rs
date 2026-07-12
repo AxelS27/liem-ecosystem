@@ -20,6 +20,9 @@ impl Renderer for MockRenderer {
     fn apply_theme(&mut self, _: &liem_bar::core::config::ThemeConfig) -> Result<(), String> {
         Ok(())
     }
+    fn apply_css(&mut self, _: &std::collections::HashMap<String, liem_bar::core::theme::CssStyle>) -> Result<(), String> {
+        Ok(())
+    }
     fn set_visible(&mut self, _: bool) -> Result<(), String> {
         Ok(())
     }

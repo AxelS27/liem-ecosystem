@@ -28,6 +28,9 @@ pub trait Renderer {
     /// Update visual styling using design token themes (colors, corners, padding, opacity).
     fn apply_theme(&mut self, theme: &ThemeConfig) -> Result<(), String>;
 
+    /// Apply CSS styles dynamically.
+    fn apply_css(&mut self, styles: &std::collections::HashMap<String, crate::core::theme::CssStyle>) -> Result<(), String>;
+
     /// Toggle the visibility of the bar window (e.g. for slide-in/slide-out animations).
     fn set_visible(&mut self, visible: bool) -> Result<(), String>;
 
@@ -88,12 +91,14 @@ enum AutoHideState {
 
 pub struct SlintRenderer {
     windows: HashMap<String, MainWindow>,
+    pub styles: HashMap<String, crate::core::theme::CssStyle>,
 }
 
 impl SlintRenderer {
     pub fn new() -> Self {
         Self {
             windows: HashMap::new(),
+            styles: HashMap::new(),
         }
     }
 
@@ -390,6 +395,8 @@ impl Renderer for SlintRenderer {
                     _ => pw.widget_id.clone(),
                 };
 
+                let (bg, border, radius, text_color, font_sz) = crate::core::theme::get_widget_style(&self.styles, &pw.widget_id);
+
                 slint_widgets.push(SlintWidget {
                     widget_id: pw.widget_id.into(),
                     x: pw.bounds_x,
@@ -397,6 +404,11 @@ impl Renderer for SlintRenderer {
                     width: pw.bounds_w,
                     height: pw.bounds_h,
                     text: text.into(),
+                    background_color: bg,
+                    border_color: border,
+                    border_radius: radius,
+                    text_color,
+                    font_size: font_sz,
                 });
             }
 
@@ -409,6 +421,14 @@ impl Renderer for SlintRenderer {
     fn apply_theme(&mut self, theme: &ThemeConfig) -> Result<(), String> {
         for window in self.windows.values() {
             crate::core::theme::apply_theme_to_window(window, theme);
+        }
+        Ok(())
+    }
+
+    fn apply_css(&mut self, styles: &std::collections::HashMap<String, crate::core::theme::CssStyle>) -> Result<(), String> {
+        self.styles = styles.clone();
+        for window in self.windows.values() {
+            crate::core::theme::apply_css_to_window(window, styles);
         }
         Ok(())
     }
