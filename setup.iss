@@ -52,6 +52,15 @@ Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; Value
 ; Add Unified CLI installation directory to User PATH
 Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Check: NeedsAddPathCli
 
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}\Liem Wallpaper\config.json"
+Type: filesandordirs; Name: "{app}\Liem Bar\config.json"
+Type: filesandordirs; Name: "{app}\config.json"
+Type: filesandordirs; Name: "{app}\Liem Wallpaper\*.log"
+Type: filesandordirs; Name: "{app}\Liem Bar\*.log"
+Type: filesandordirs; Name: "{app}\*.log"
+Type: filesandordirs; Name: "{app}"
+
 [Code]
 var
   WallpaperInstallDir: String;
@@ -124,6 +133,19 @@ begin
   // Terminate any running instances of the daemon before installing
   Exec('taskkill.exe', '/F /IM lw-service.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec('taskkill.exe', '/F /IM liem-bar.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /IM liem.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+function InitializeUninstall(): Boolean;
+var
+  ResultCode: Integer;
+begin
+  Result := True;
+  // Terminate background services first so Inno Setup doesn't get file locks
+  Exec('taskkill.exe', '/F /IM lw-service.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /IM lw.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /IM liem-bar.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /IM lb.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec('taskkill.exe', '/F /IM liem.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 

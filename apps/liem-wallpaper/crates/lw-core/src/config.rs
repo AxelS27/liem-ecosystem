@@ -117,9 +117,12 @@ impl Config {
     }
 
     pub fn default_path() -> std::path::PathBuf {
-        liem_config::get_default_config_dir()
-            .unwrap_or_else(|_| std::path::PathBuf::from("."))
-            .join("liem-wallpaper.json")
+        if let Ok(mut exe_path) = std::env::current_exe() {
+            exe_path.pop();
+            exe_path.join("config.json")
+        } else {
+            std::path::PathBuf::from("config.json")
+        }
     }
 
     pub fn load_from_file<P: AsRef<std::path::Path>>(path: P) -> Result<Self, LwError> {

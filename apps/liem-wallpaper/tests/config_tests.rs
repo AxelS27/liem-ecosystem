@@ -3,7 +3,7 @@ use lw_core::{Config, EasingStyle, EasingDirection, WallpaperPosition};
 #[test]
 fn test_default_config_path() {
     let path = Config::default_path();
-    assert!(path.to_string_lossy().contains("liem-wallpaper.json"));
+    assert!(path.to_string_lossy().contains("config.json"));
 }
 
 #[test]

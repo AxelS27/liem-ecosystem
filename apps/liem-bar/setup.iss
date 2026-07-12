@@ -30,6 +30,11 @@ Filename: "{app}\liem-bar.exe"; Description: "Start Liem Bar"; Flags: nowait pos
 ; Add installation directory to User PATH
 Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Check: NeedsAddPath
 
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}\config.json"
+Type: filesandordirs; Name: "{app}\*.log"
+Type: filesandordirs; Name: "{app}"
+
 [Code]
 procedure CleanOldPath();
 var
@@ -75,6 +80,16 @@ begin
   Result := True;
   CleanOldPath();
   Exec('taskkill.exe', '/F /IM liem-bar.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /IM lb.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+function InitializeUninstall(): Boolean;
+var
+  ResultCode: Integer;
+begin
+  Result := True;
+  Exec('taskkill.exe', '/F /IM liem-bar.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /IM lb.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 
 function NeedsAddPath(): Boolean;

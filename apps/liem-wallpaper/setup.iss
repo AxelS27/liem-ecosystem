@@ -32,6 +32,11 @@ Filename: "{app}\lw-service.exe"; Description: "Start Liem Wallpaper Service"; F
 ; Add installation directory to User PATH
 Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Check: NeedsAddPath
 
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}\config.json"
+Type: filesandordirs; Name: "{app}\*.log"
+Type: filesandordirs; Name: "{app}"
+
 [Code]
 procedure CleanOldPath();
 var
@@ -77,6 +82,16 @@ begin
   Result := True;
   CleanOldPath();
   Exec('taskkill.exe', '/F /IM lw-service.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /IM lw.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+function InitializeUninstall(): Boolean;
+var
+  ResultCode: Integer;
+begin
+  Result := True;
+  Exec('taskkill.exe', '/F /IM lw-service.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /IM lw.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 
 function NeedsAddPath(): Boolean;
@@ -103,10 +118,23 @@ var
 begin
   if CurUninstallStep = usPostUninstall then
   begin
-    // Remove path from environment on uninstall
-    AppDir := ';' + ExpandConstant('{app}');
+    AppDir := ExpandConstant('{app}');
     if RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path) then
     begin
+      PosAppDir := Pos(';' + Uppercase(AppDir), Uppercase(Path));
+      if PosAppDir > 0 then
+      begin
+        Delete(Path, PosAppDir, Length(';' + AppDir));
+        RegWriteExpandStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path);
+      end;
+      
+      PosAppDir := Pos(Uppercase(AppDir) + ';', Uppercase(Path));
+      if PosAppDir > 0 then
+      begin
+        Delete(Path, PosAppDir, Length(AppDir + ';'));
+        RegWriteExpandStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path);
+      end;
+      
       PosAppDir := Pos(Uppercase(AppDir), Uppercase(Path));
       if PosAppDir > 0 then
       begin
