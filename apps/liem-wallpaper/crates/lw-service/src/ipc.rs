@@ -234,7 +234,14 @@ where
     W: WallpaperManager + 'static,
 {
     // 1. Get current wallpaper path and normalize/map transition name
-    let from_path = wallpaper_manager.get_current_wallpaper()?;
+    let mut from_path = wallpaper_manager.get_current_wallpaper().unwrap_or_default();
+    if !from_path.exists() {
+        tracing::warn!(
+            "Current wallpaper file does not exist or was deleted: {}. Falling back to clean load.",
+            from_path.display()
+        );
+        from_path = target_path.to_path_buf();
+    }
     let mut effect_type = params.effect_type.clone();
     if effect_type == "zoom" {
         effect_type = "zoom-in".to_string();
