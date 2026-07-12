@@ -3,9 +3,9 @@
 
 [Setup]
 AppName=Liem Desktop Ecosystem
-AppVersion=0.2.1
+AppVersion=0.2.2
 AppPublisher=Liem Ecosystem Contributors
-DefaultDirName={userpf}\Liem Ecosystem
+DefaultDirName=D:\Liem Desktop Ecosystem
 DefaultGroupName=Liem Desktop Ecosystem
 DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\Liem Wallpaper\lw-service.exe

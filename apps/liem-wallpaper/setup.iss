@@ -3,9 +3,9 @@
 
 [Setup]
 AppName=Liem Wallpaper
-AppVersion=0.2.1
+AppVersion=0.2.2
 AppPublisher=Liem Wallpaper Contributors
-DefaultDirName={userpf}\Liem Wallpaper
+DefaultDirName=D:\Liem Desktop Ecosystem\Liem Wallpaper
 DefaultGroupName=Liem Wallpaper
 DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\lw-service.exe

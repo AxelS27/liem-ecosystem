@@ -3,9 +3,9 @@
 
 [Setup]
 AppName=Liem Bar
-AppVersion=0.2.1
+AppVersion=0.2.2
 AppPublisher=Liem Bar Contributors
-DefaultDirName={userpf}\Liem Bar
+DefaultDirName=D:\Liem Desktop Ecosystem\Liem Bar
 DefaultGroupName=Liem Bar
 DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\liem-bar.exe
