@@ -9,18 +9,46 @@ use crate::services::power::Win32BatteryService;
 /// Route and run CLI subcommands.
 pub fn run_cli_command(args: &[String], config_path: &Path) -> Result<(), String> {
     if args.is_empty() {
-        return Err("No command specified. Available: validate, diagnostics, edit".to_string());
+        return Err("No command specified. Available: validate, diagnostics, edit, update".to_string());
     }
 
     match args[0].as_str() {
         "validate" => validate_config(config_path),
         "diagnostics" => run_diagnostics(config_path),
         "edit" => edit_active_profile(config_path),
+        "update" => run_update(),
         cmd => Err(format!(
-            "Unknown command '{}'. Available: validate, diagnostics, edit",
+            "Unknown command '{}'. Available: validate, diagnostics, edit, update",
             cmd
         )),
     }
+}
+
+fn run_update() -> Result<(), String> {
+    println!("Checking for ecosystem updates via Liem Wallpaper...");
+    let mut exe_path = std::env::current_exe().map_err(|e| e.to_string())?;
+    exe_path.pop();
+    
+    let mut target = exe_path.join("lw.exe");
+    if !target.exists() {
+        if let Some(parent) = exe_path.parent() {
+            target = parent.join("Liem Wallpaper").join("lw.exe");
+        }
+    }
+    if !target.exists() {
+        target = std::path::PathBuf::from("lw.exe");
+    }
+    
+    let mut child = std::process::Command::new(target)
+        .arg("update")
+        .spawn()
+        .map_err(|e| format!("Failed to execute update command: {}", e))?;
+        
+    let status = child.wait().map_err(|e| e.to_string())?;
+    if !status.success() {
+        return Err(format!("Update failed with exit code: {:?}", status.code()));
+    }
+    Ok(())
 }
 
 /// Validate configuration integrity.

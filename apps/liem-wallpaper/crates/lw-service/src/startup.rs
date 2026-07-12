@@ -32,7 +32,7 @@ pub fn set_startup_run(enable: bool) -> Result<(), LwError> {
         let res = if enable {
             let exe_path = std::env::current_exe()
                 .map_err(|e| LwError::Ipc(format!("Failed to get current executable path: {e}")))?;
-            let exe_str = exe_path.to_string_lossy().into_owned();
+            let exe_str = format!("\"{}\"", exe_path.to_string_lossy());
             let value_w: Vec<u16> = exe_str.encode_utf16().chain(std::iter::once(0)).collect();
 
             if let Err(e) = RegSetValueExW(

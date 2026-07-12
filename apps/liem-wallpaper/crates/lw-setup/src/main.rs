@@ -340,7 +340,7 @@ fn install(install_dir: &Path) -> std::io::Result<()> {
     // Register Uninstaller in Windows Registry (Add/Remove Programs)
     let uninstall_key = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\LiemWallpaper";
     let uninstall_str =
-        install_dir.join("uninstall.exe").to_string_lossy().into_owned() + " --uninstall";
+        format!("\"{}\" --uninstall", install_dir.join("uninstall.exe").to_string_lossy());
 
     let _ = set_registry_value(uninstall_key, "DisplayName", "Liem Wallpaper");
     let _ = set_registry_value(uninstall_key, "DisplayVersion", "0.1.0");

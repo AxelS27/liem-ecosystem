@@ -127,6 +127,7 @@ impl Renderer for SlintRenderer {
         margin: u32,
     ) -> Result<(), String> {
         let window = MainWindow::new().map_err(|e| e.to_string())?;
+        window.show().map_err(|e| e.to_string())?;
         register_window(window.window(), window.as_weak());
         register_active_window(window.as_weak());
 

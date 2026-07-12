@@ -11,6 +11,7 @@ fn print_help() {
     println!("  status                Show running status of ecosystem services");
     println!("  start                 Start all ecosystem services");
     println!("  stop                  Stop all ecosystem services");
+    println!("  update                Check and perform ecosystem updates");
     println!("  help                  Show this help menu");
 }
 
@@ -148,6 +149,12 @@ fn main() {
             stop_process("lw-service.exe");
             stop_process("liem-bar.exe");
             println!("  Stopped all services.");
+        }
+        "update" => {
+            if let Err(e) = run_sub_binary("lw.exe", &["update".to_string()]) {
+                eprintln!("Error running update via Liem Wallpaper: {}", e);
+                std::process::exit(1);
+            }
         }
         other => {
             eprintln!("Unknown command: '{}'", other);
