@@ -66,9 +66,9 @@ pub struct LiemBarSettings {
     pub active_profile: String,
     #[serde(default)]
     pub profiles: HashMap<String, ProfileConfig>,
-    #[serde(default)]
+    #[serde(default, skip_serializing)]
     pub layouts: HashMap<String, LayoutConfig>,
-    #[serde(default)]
+    #[serde(default, skip_serializing)]
     pub themes: HashMap<String, ThemeConfig>,
     pub manage_windows_taskbar: bool,
     #[serde(skip)]
@@ -277,6 +277,38 @@ fn post_process_loaded_config(
             active_profile_dir.join("style.css"),
             default_style,
         ).map_err(|e| e.to_string())?;
+
+        // Write default theme.json
+        let default_theme = serde_json::json!({
+            "name": "default",
+            "colors": {
+                "primary": "hsl(220, 80%, 50%)",
+                "secondary": "hsl(220, 20%, 40%)",
+                "surface": "hsl(220, 10%, 10%)",
+                "surface_alt": "hsl(220, 10%, 15%)"
+            },
+            "spacing": {
+                "large": 16,
+                "medium": 8,
+                "small": 4
+            },
+            "radius": {
+                "medium": 8,
+                "small": 4
+            },
+            "opacity": 0.95,
+            "blur_radius": 20,
+            "animations": {
+                "slide": {
+                    "duration_ms": 250,
+                    "easing": "ease-out"
+                }
+            }
+        });
+        std::fs::write(
+            active_profile_dir.join("theme.json"),
+            serde_json::to_string_pretty(&default_theme).unwrap(),
+        ).map_err(|e| e.to_string())?;
     }
 
     // Now, load Layout config from layout.json in active profile folder
@@ -289,6 +321,15 @@ fn post_process_loaded_config(
             name: bar_settings.active_profile.clone(),
             root: layout_root,
         },
+    );
+
+    // Now, load Theme config from theme.json in active profile folder
+    let theme_path = active_profile_dir.join("theme.json");
+    let theme_str = std::fs::read_to_string(&theme_path).map_err(|e| format!("Failed to read active profile theme.json: {}", e))?;
+    let theme_root: ThemeConfig = serde_json::from_str(&theme_str).map_err(|e| format!("Failed to parse active profile theme.json: {}", e))?;
+    bar_settings.themes.insert(
+        bar_settings.active_profile.clone(),
+        theme_root,
     );
 
     // Now, load CSS styles from style.css in active profile folder
@@ -343,6 +384,7 @@ where
                 
                 let watch_files = vec![
                     active_profile_dir.join("layout.json"),
+                    active_profile_dir.join("theme.json"),
                     active_profile_dir.join("style.css"),
                 ];
 

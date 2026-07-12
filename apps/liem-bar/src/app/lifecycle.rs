@@ -238,7 +238,7 @@ impl LiemBarApp {
             let mut r_borrow = cell.borrow_mut();
             let renderer = r_borrow.as_mut().unwrap();
             let _ = renderer.apply_css(&bar_settings.styles);
-            if let Some(theme) = bar_settings.themes.get("default") {
+            if let Some(theme) = bar_settings.themes.get(active_profile.as_str()) {
                 let _ = renderer.apply_theme(theme);
             }
         });
