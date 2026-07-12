@@ -84,7 +84,7 @@ pub trait BarModule: Plugin {
     fn metadata(&self) -> ModuleMetadata;
 
     fn on_config_changed(&self, _settings: &Value) -> Result<(), String> { Ok(()) }
-    fn on_theme_changed(&self, _theme: &super::config::ThemeConfig) -> Result<(), String> { Ok(()) }
+
     fn init_ui(&self, widget_id: &str, ui_handle: &slint::Window) -> Result<(), String>;
     fn on_tick(&self, _ctx: &ServiceContext) -> Result<(), String> { Ok(()) }
 

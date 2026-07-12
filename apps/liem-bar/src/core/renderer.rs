@@ -7,7 +7,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
     SWP_NOACTIVATE, SWP_SHOWWINDOW, WS_EX_TOOLWINDOW, WS_EX_TOPMOST,
 };
 
-use crate::core::config::{BarPosition, LayoutNode, ThemeConfig};
+use crate::core::config::{BarPosition, LayoutNode};
 use crate::services::monitor::enumerate_monitors;
 
 pub trait Renderer {
@@ -25,8 +25,7 @@ pub trait Renderer {
     /// Render or update the hierarchical layout tree on the screen.
     fn render_layout_tree(&mut self, root: &LayoutNode) -> Result<(), String>;
 
-    /// Update visual styling using design token themes (colors, corners, padding, opacity).
-    fn apply_theme(&mut self, theme: &ThemeConfig) -> Result<(), String>;
+
 
     /// Apply CSS styles dynamically.
     fn apply_css(&mut self, styles: &std::collections::HashMap<String, crate::core::theme::CssStyle>) -> Result<(), String>;
@@ -418,12 +417,7 @@ impl Renderer for SlintRenderer {
         Ok(())
     }
 
-    fn apply_theme(&mut self, theme: &ThemeConfig) -> Result<(), String> {
-        for window in self.windows.values() {
-            crate::core::theme::apply_theme_to_window(window, theme);
-        }
-        Ok(())
-    }
+
 
     fn apply_css(&mut self, styles: &std::collections::HashMap<String, crate::core::theme::CssStyle>) -> Result<(), String> {
         self.styles = styles.clone();

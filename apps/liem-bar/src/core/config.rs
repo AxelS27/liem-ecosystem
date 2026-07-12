@@ -44,23 +44,6 @@ pub struct LayoutConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct AnimationConfig {
-    pub duration_ms: u32,
-    pub easing: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ThemeConfig {
-    pub name: String,
-    pub colors: HashMap<String, String>,
-    pub spacing: HashMap<String, u32>,
-    pub radius: HashMap<String, u32>,
-    pub opacity: f32,
-    pub blur_radius: u32,
-    pub animations: HashMap<String, AnimationConfig>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct LiemBarSettings {
     pub schema_version: u32,
     pub active_profile: String,
@@ -68,8 +51,6 @@ pub struct LiemBarSettings {
     pub profiles: HashMap<String, ProfileConfig>,
     #[serde(default, skip_serializing)]
     pub layouts: HashMap<String, LayoutConfig>,
-    #[serde(default, skip_serializing)]
-    pub themes: HashMap<String, ThemeConfig>,
     pub manage_windows_taskbar: bool,
     #[serde(skip)]
     pub styles: HashMap<String, crate::core::theme::CssStyle>,
@@ -105,50 +86,11 @@ impl Default for LiemBarSettings {
             },
         );
 
-        let mut themes = HashMap::new();
-        let mut colors = HashMap::new();
-        colors.insert("surface".to_string(), "hsl(220, 10%, 10%)".to_string());
-        colors.insert("surface_alt".to_string(), "hsl(220, 10%, 15%)".to_string());
-        colors.insert("primary".to_string(), "hsl(220, 80%, 50%)".to_string());
-        colors.insert("secondary".to_string(), "hsl(220, 20%, 40%)".to_string());
-
-        let mut spacing = HashMap::new();
-        spacing.insert("small".to_string(), 4);
-        spacing.insert("medium".to_string(), 8);
-        spacing.insert("large".to_string(), 16);
-
-        let mut radius = HashMap::new();
-        radius.insert("small".to_string(), 4);
-        radius.insert("medium".to_string(), 8);
-
-        let mut animations = HashMap::new();
-        animations.insert(
-            "slide".to_string(),
-            AnimationConfig {
-                duration_ms: 250,
-                easing: "ease-out".to_string(),
-            },
-        );
-
-        themes.insert(
-            "default".to_string(),
-            ThemeConfig {
-                name: "default".to_string(),
-                colors,
-                spacing,
-                radius,
-                opacity: 0.95,
-                blur_radius: 20,
-                animations,
-            },
-        );
-
         Self {
             schema_version: 1,
             active_profile: "default".to_string(),
             profiles,
             layouts,
-            themes,
             manage_windows_taskbar: false,
             styles: HashMap::new(),
         }
@@ -277,38 +219,6 @@ fn post_process_loaded_config(
             active_profile_dir.join("style.css"),
             default_style,
         ).map_err(|e| e.to_string())?;
-
-        // Write default theme.json
-        let default_theme = serde_json::json!({
-            "name": "default",
-            "colors": {
-                "primary": "hsl(220, 80%, 50%)",
-                "secondary": "hsl(220, 20%, 40%)",
-                "surface": "hsl(220, 10%, 10%)",
-                "surface_alt": "hsl(220, 10%, 15%)"
-            },
-            "spacing": {
-                "large": 16,
-                "medium": 8,
-                "small": 4
-            },
-            "radius": {
-                "medium": 8,
-                "small": 4
-            },
-            "opacity": 0.95,
-            "blur_radius": 20,
-            "animations": {
-                "slide": {
-                    "duration_ms": 250,
-                    "easing": "ease-out"
-                }
-            }
-        });
-        std::fs::write(
-            active_profile_dir.join("theme.json"),
-            serde_json::to_string_pretty(&default_theme).unwrap(),
-        ).map_err(|e| e.to_string())?;
     }
 
     // Now, load Layout config from layout.json in active profile folder
@@ -321,15 +231,6 @@ fn post_process_loaded_config(
             name: bar_settings.active_profile.clone(),
             root: layout_root,
         },
-    );
-
-    // Now, load Theme config from theme.json in active profile folder
-    let theme_path = active_profile_dir.join("theme.json");
-    let theme_str = std::fs::read_to_string(&theme_path).map_err(|e| format!("Failed to read active profile theme.json: {}", e))?;
-    let theme_root: ThemeConfig = serde_json::from_str(&theme_str).map_err(|e| format!("Failed to parse active profile theme.json: {}", e))?;
-    bar_settings.themes.insert(
-        bar_settings.active_profile.clone(),
-        theme_root,
     );
 
     // Now, load CSS styles from style.css in active profile folder

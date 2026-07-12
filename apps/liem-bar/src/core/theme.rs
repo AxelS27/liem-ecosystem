@@ -1,6 +1,5 @@
 use slint::Color;
 
-use crate::core::config::ThemeConfig;
 use crate::core::renderer::MainWindow;
 
 /// Parse HEX or HSL color strings into a Slint Color object.
@@ -60,19 +59,7 @@ fn hsl_to_color(h: f32, s: f32, l: f32) -> Color {
     )
 }
 
-/// Dynamically map and apply ThemeConfig tokens to a MainWindow's exposed Slint properties.
-pub fn apply_theme_to_window(window: &MainWindow, theme: &ThemeConfig) {
-    if let Some(surf_str) = theme.colors.get("surface") {
-        window.set_surface_color(slint::Brush::SolidColor(parse_color(surf_str)));
-    }
-    if let Some(border_str) = theme.colors.get("secondary") {
-        window.set_border_color(slint::Brush::SolidColor(parse_color(border_str)));
-    }
-    if let Some(radius_val) = theme.radius.get("medium") {
-        window.set_corner_radius(*radius_val as f32);
-    }
-    window.set_panel_opacity(theme.opacity);
-}
+
 
 use std::collections::HashMap;
 

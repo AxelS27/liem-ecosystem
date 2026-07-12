@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use slint::ComponentHandle;
 use liem_common::AppLifecycleState;
 
-use crate::core::config::{load_or_create_bar_config, BarPosition, LayoutNode, ThemeConfig, LiemBarSettings};
+use crate::core::config::{load_or_create_bar_config, BarPosition, LayoutNode, LiemBarSettings};
 use crate::core::renderer::{Renderer, SlintRenderer, MainWindow};
 use crate::core::module_manager::ModuleManager;
 use crate::core::module::{BarModule, ServiceContext};
@@ -84,9 +84,7 @@ impl<'a, 'b, 'c> Renderer for WindowRenderer<'a, 'b, 'c> {
         Ok(())
     }
 
-    fn apply_theme(&mut self, _theme: &ThemeConfig) -> Result<(), String> {
-        Ok(())
-    }
+
 
     fn apply_css(&mut self, _styles: &std::collections::HashMap<String, crate::core::theme::CssStyle>) -> Result<(), String> {
         Ok(())
@@ -233,14 +231,11 @@ impl LiemBarApp {
             crate::integrations::ecosystem::start_ecosystem_client(self.module_manager.clone());
         }
 
-        // 9. Apply active profile theme styling (CSS and legacy theme)
+        // 9. Apply active profile CSS styling
         RENDERER_CELL.with(|cell| {
             let mut r_borrow = cell.borrow_mut();
             let renderer = r_borrow.as_mut().unwrap();
             let _ = renderer.apply_css(&bar_settings.styles);
-            if let Some(theme) = bar_settings.themes.get(active_profile.as_str()) {
-                let _ = renderer.apply_theme(theme);
-            }
         });
 
         // 10. If configured, enable auto-hide on the native Windows taskbar

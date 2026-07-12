@@ -17,9 +17,7 @@ impl Renderer for MockRenderer {
     fn render_layout_tree(&mut self, _: &LayoutNode) -> Result<(), String> {
         Ok(())
     }
-    fn apply_theme(&mut self, _: &liem_bar::core::config::ThemeConfig) -> Result<(), String> {
-        Ok(())
-    }
+
     fn apply_css(&mut self, _: &std::collections::HashMap<String, liem_bar::core::theme::CssStyle>) -> Result<(), String> {
         Ok(())
     }
