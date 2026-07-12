@@ -89,6 +89,79 @@ fn run_sub_binary(bin_name: &str, args: &[String]) -> Result<(), String> {
     Ok(())
 }
 
+fn run_ecosystem_update() -> Result<(), String> {
+    let current_version = env!("CARGO_PKG_VERSION");
+    let repo = "AxelS27/liem-ecosystem";
+    let asset_name = "LiemEcosystemSetup.exe";
+
+    println!("Checking for Liem Desktop Ecosystem updates from GitHub (AxelS27/liem-ecosystem)...");
+
+    let ps_script = format!(
+        "$version = '{}'; \
+         $repo = '{}'; \
+         $asset_name = '{}'; \
+         try {{ \
+             $r = Invoke-RestMethod -Uri \"https://api.github.com/repos/$repo/releases/latest\" -UserAgent \"LiemEcosystem\" -ErrorAction Stop; \
+             $latest = $r.tag_name.TrimStart('v'); \
+             if ($latest -ne $version) {{ \
+                 Write-Output \"NEW_VERSION:$latest\"; \
+                 $asset = $r.assets | Where-Object {{ $_.name -eq $asset_name }} | Select-Object -First 1; \
+                 if ($asset) {{ \
+                     Write-Output \"DOWNLOADING:$($asset.name)\"; \
+                     $tempPath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), $asset.name); \
+                     Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $tempPath -UserAgent \"LiemEcosystem\" -ErrorAction Stop; \
+                     Write-Output \"INSTALLING\"; \
+                     Start-Process -FilePath $tempPath -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'; \
+                     Write-Output \"SUCCESS\"; \
+                 }} else {{ \
+                     Write-Output \"ERROR:No installer asset found in the latest release ($asset_name)\"; \
+                 }} \
+             }} else {{ \
+                 Write-Output \"UPTODATE\"; \
+             }} \
+         }} catch {{ \
+             Write-Output \"ERROR:$($_.Exception.Message)\"; \
+         }}",
+        current_version, repo, asset_name
+    );
+
+    let output = std::process::Command::new("powershell")
+        .args(&["-NoProfile", "-Command", &ps_script])
+        .output()
+        .map_err(|e| format!("Failed to run PowerShell: {e}"))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut is_downloading = false;
+
+    for line in stdout.lines() {
+        let line = line.trim();
+        if line.starts_with("NEW_VERSION:") {
+            let latest_version = line.trim_start_matches("NEW_VERSION:");
+            println!("New version v{} is available!", latest_version);
+        } else if line.starts_with("DOWNLOADING:") {
+            let name = line.trim_start_matches("DOWNLOADING:");
+            println!("Downloading latest installer ({}) to Temp folder...", name);
+            is_downloading = true;
+        } else if line == "INSTALLING" {
+            println!("Launching silent installer in background...");
+        } else if line == "SUCCESS" {
+            println!("Update launched successfully! The ecosystem will restart shortly.");
+            return Ok(());
+        } else if line == "UPTODATE" {
+            println!("Liem Desktop Ecosystem is already up-to-date (v{}).", current_version);
+            return Ok(());
+        } else if line.starts_with("ERROR:") {
+            return Err(line.trim_start_matches("ERROR:").to_string());
+        }
+    }
+
+    if is_downloading {
+        Err("Update process terminated unexpectedly during download.".to_string())
+    } else {
+        Err(format!("Failed to retrieve update status. Raw output: {stdout}"))
+    }
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
@@ -151,8 +224,8 @@ fn main() {
             println!("  Stopped all services.");
         }
         "update" => {
-            if let Err(e) = run_sub_binary("lw.exe", &["update".to_string()]) {
-                eprintln!("Error running update via Liem Wallpaper: {}", e);
+            if let Err(e) = run_ecosystem_update() {
+                eprintln!("Update failed: {}", e);
                 std::process::exit(1);
             }
         }

@@ -3,7 +3,7 @@
 
 [Setup]
 AppName=Liem Wallpaper
-AppVersion=0.1.0
+AppVersion=0.1.7
 AppPublisher=Liem Wallpaper Contributors
 DefaultDirName={userpf}\Liem Wallpaper
 DefaultGroupName=Liem Wallpaper
@@ -98,11 +98,13 @@ function NeedsAddPath(): Boolean;
 var
   Path: String;
   AppDir: String;
+  AppDirSemi: String;
 begin
   AppDir := ExpandConstant('{app}');
   if RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Path) then
   begin
-    Result := Pos(Uppercase(AppDir), Uppercase(Path)) = 0;
+    AppDirSemi := ';' + AppDir + ';';
+    Result := (Pos(Uppercase(AppDirSemi), ';' + Uppercase(Path) + ';') = 0);
   end
   else
   begin

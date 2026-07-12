@@ -475,7 +475,7 @@ fn run_interactive_update() -> Result<String, String> {
              $latest = $r.tag_name.TrimStart('v'); \
              if ($latest -ne $version) {{ \
                  Write-Output \"NEW_VERSION:$latest\"; \
-                 $asset = $r.assets | Where-Object {{ $_.name -like '*Setup.exe' -or $_.name -like '*.exe' }} | Select-Object -First 1; \
+                 $asset = $r.assets | Where-Object {{ $_.name -eq 'LiemWallpaperSetup.exe' }} | Select-Object -First 1; \
                  if ($asset) {{ \
                      Write-Output \"DOWNLOADING:$($asset.name)\"; \
                      $tempPath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), $asset.name); \
@@ -484,7 +484,7 @@ fn run_interactive_update() -> Result<String, String> {
                      Start-Process -FilePath $tempPath -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'; \
                      Write-Output \"SUCCESS\"; \
                  }} else {{ \
-                     Write-Output \"ERROR:No installer asset found in the latest release\"; \
+                     Write-Output \"ERROR:No installer asset found in the latest release (LiemWallpaperSetup.exe)\"; \
                  }} \
              }} else {{ \
                  Write-Output \"UPTODATE\"; \

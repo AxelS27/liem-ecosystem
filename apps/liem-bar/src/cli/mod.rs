@@ -25,30 +25,76 @@ pub fn run_cli_command(args: &[String], config_path: &Path) -> Result<(), String
 }
 
 fn run_update() -> Result<(), String> {
-    println!("Checking for ecosystem updates via Liem Wallpaper...");
-    let mut exe_path = std::env::current_exe().map_err(|e| e.to_string())?;
-    exe_path.pop();
-    
-    let mut target = exe_path.join("lw.exe");
-    if !target.exists() {
-        if let Some(parent) = exe_path.parent() {
-            target = parent.join("Liem Wallpaper").join("lw.exe");
+    let current_version = env!("CARGO_PKG_VERSION");
+    let repo = "AxelS27/liem-ecosystem";
+    let asset_name = "LiemBarSetup.exe";
+
+    println!("Checking for Liem Bar updates from GitHub (AxelS27/liem-ecosystem)...");
+
+    let ps_script = format!(
+        "$version = '{}'; \
+         $repo = '{}'; \
+         $asset_name = '{}'; \
+         try {{ \
+             $r = Invoke-RestMethod -Uri \"https://api.github.com/repos/$repo/releases/latest\" -UserAgent \"LiemBar\" -ErrorAction Stop; \
+             $latest = $r.tag_name.TrimStart('v'); \
+             if ($latest -ne $version) {{ \
+                 Write-Output \"NEW_VERSION:$latest\"; \
+                 $asset = $r.assets | Where-Object {{ $_.name -eq $asset_name }} | Select-Object -First 1; \
+                 if ($asset) {{ \
+                     Write-Output \"DOWNLOADING:$($asset.name)\"; \
+                     $tempPath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), $asset.name); \
+                     Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $tempPath -UserAgent \"LiemBar\" -ErrorAction Stop; \
+                     Write-Output \"INSTALLING\"; \
+                     Start-Process -FilePath $tempPath -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'; \
+                     Write-Output \"SUCCESS\"; \
+                 }} else {{ \
+                     Write-Output \"ERROR:No installer asset found in the latest release ($asset_name)\"; \
+                 }} \
+             }} else {{ \
+                 Write-Output \"UPTODATE\"; \
+             }} \
+         }} catch {{ \
+             Write-Output \"ERROR:$($_.Exception.Message)\"; \
+         }}",
+        current_version, repo, asset_name
+    );
+
+    let output = std::process::Command::new("powershell")
+        .args(&["-NoProfile", "-Command", &ps_script])
+        .output()
+        .map_err(|e| format!("Failed to run PowerShell: {e}"))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut is_downloading = false;
+
+    for line in stdout.lines() {
+        let line = line.trim();
+        if line.starts_with("NEW_VERSION:") {
+            let latest_version = line.trim_start_matches("NEW_VERSION:");
+            println!("New version v{} is available!", latest_version);
+        } else if line.starts_with("DOWNLOADING:") {
+            let name = line.trim_start_matches("DOWNLOADING:");
+            println!("Downloading latest installer ({}) to Temp folder...", name);
+            is_downloading = true;
+        } else if line == "INSTALLING" {
+            println!("Launching silent installer in background...");
+        } else if line == "SUCCESS" {
+            println!("Update launched successfully! Liem Bar will restart shortly.");
+            return Ok(());
+        } else if line == "UPTODATE" {
+            println!("Liem Bar is already up-to-date (v{}).", current_version);
+            return Ok(());
+        } else if line.starts_with("ERROR:") {
+            return Err(line.trim_start_matches("ERROR:").to_string());
         }
     }
-    if !target.exists() {
-        target = std::path::PathBuf::from("lw.exe");
+
+    if is_downloading {
+        Err("Update process terminated unexpectedly during download.".to_string())
+    } else {
+        Err(format!("Failed to retrieve update status. Raw output: {stdout}"))
     }
-    
-    let mut child = std::process::Command::new(target)
-        .arg("update")
-        .spawn()
-        .map_err(|e| format!("Failed to execute update command: {}", e))?;
-        
-    let status = child.wait().map_err(|e| e.to_string())?;
-    if !status.success() {
-        return Err(format!("Update failed with exit code: {:?}", status.code()));
-    }
-    Ok(())
 }
 
 /// Validate configuration integrity.
