@@ -16,6 +16,7 @@ tracing = { workspace = true }
 windows = { workspace = true }
 liem-common = { path = "../../../../crates/liem-common" }
 liem-ipc = { path = "../../../../crates/liem-ipc" }
+slint = { workspace = true }
 
 [lints]
 workspace = true

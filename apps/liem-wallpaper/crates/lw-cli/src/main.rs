@@ -113,6 +113,15 @@ enum Commands {
 
     /// Check and perform application updates
     Update,
+
+    /// Sync visual theme (accent color and transition style) across ecosystem
+    ThemeSync {
+        /// Accent color hex code (e.g. #FF0055)
+        accent: String,
+        
+        /// Transition style name (e.g. fade)
+        transition: String,
+    },
 }
 
 fn parse_style_and_dir(
@@ -306,6 +315,47 @@ async fn main() {
                     std::process::exit(1);
                 }
             }
+        }
+        Commands::ThemeSync { accent, transition } => {
+            // Trigger testing broadcast on Ecosystem Event Bus
+            let version = env!("CARGO_PKG_VERSION");
+            let manifest = liem_common::AppManifest {
+                app_id: "org.liem.cli".to_string(),
+                name: "Liem CLI".to_string(),
+                version: version.to_string(),
+                protocol_version: 1,
+                capabilities: vec![],
+                published_services: vec![],
+                event_subscriptions: vec![],
+            };
+
+            println!("Connecting to Ecosystem Event Bus...");
+            let (client, _rx) = match liem_ipc::IpcClient::connect(
+                "org.liem.cli",
+                manifest,
+                r"\\.\pipe\liem-event-bus"
+            ).await {
+                Ok(c) => c,
+                Err(e) => {
+                    eprintln!("Failed to connect to Ecosystem Event Bus: {e}");
+                    std::process::exit(1);
+                }
+            };
+
+            println!("Broadcasting ThemeChange: accent={accent}, transition={transition}...");
+            let data = serde_json::json!({
+                "accent": accent,
+                "transition": transition,
+            });
+
+            if let Err(e) = client.publish("ThemeChange", data) {
+                eprintln!("Failed to publish ThemeChange: {e}");
+                std::process::exit(1);
+            }
+
+            // Sleep briefly to let the broker process before exit
+            tokio::time::sleep(std::time::Duration::from_millis(150)).await;
+            println!("Theme sync broadcast completed successfully.");
         }
     }
 }

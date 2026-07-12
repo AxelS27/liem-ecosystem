@@ -18,3 +18,7 @@ chrono = { workspace = true }
 [[test]]
 name = "test_ipc_discovery"
 path = "integration/test_ipc_discovery.rs"
+
+[[test]]
+name = "test_theme_sync"
+path = "integration/test_theme_sync.rs"

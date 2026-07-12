@@ -3,7 +3,7 @@ use tracing::{info, error};
 use liem_common::AppManifest;
 use liem_ipc::{IpcBroker, IpcClient};
 
-pub async fn start_ecosystem_ipc_loop(_config: Arc<Mutex<lw_core::Config>>) {
+pub async fn start_ecosystem_ipc_loop(config: Arc<Mutex<lw_core::Config>>) {
     // 1. Attempt to spawn the ecosystem broker server
     // (If it fails because the pipe name is already in use, it means another Liem app
     // is already running the broker. That is completely normal and expected!)
@@ -58,7 +58,28 @@ pub async fn start_ecosystem_ipc_loop(_config: Arc<Mutex<lw_core::Config>>) {
                 liem_common::EventBusChannel::Broadcast(payload) => {
                     if payload.topic == "ThemeChange" {
                         info!("[Ecosystem IPC] Received ThemeChange event: {:?}", payload.data);
-                        // Theme handling logic will be integrated in US4
+                        if let Some(accent) = payload.data.get("accent").and_then(|v| v.as_str()) {
+                            if let Some(transition) = payload.data.get("transition").and_then(|v| v.as_str()) {
+                                // 1. Update active transition configuration
+                                {
+                                    let mut cfg = config.lock().unwrap();
+                                    cfg.transition_default.effect_type = transition.to_string();
+                                }
+                                // 2. Trigger visual update in the Slint HUD
+                                let hud_opt = crate::ui::HUD_HANDLE.lock().unwrap().clone();
+                                if let Some(hud_weak) = hud_opt {
+                                    let accent_clone = accent.to_string();
+                                    let transition_clone = transition.to_string();
+                                    let _ = slint::invoke_from_event_loop(move || {
+                                        if let Some(hud) = hud_weak.upgrade() {
+                                            hud.set_accent_color(crate::ui::parse_hex_color(&accent_clone));
+                                            hud.set_transition_style(transition_clone.into());
+                                        }
+                                    });
+                                }
+                                info!("[Theme] Applied accent color: {} and transition style: {}", accent, transition);
+                            }
+                        }
                     } else if payload.topic == "_system.client_connected" {
                         info!("[Ecosystem IPC] Received client connected notification: {:?}", payload.data);
                     }
