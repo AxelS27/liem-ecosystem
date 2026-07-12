@@ -1,0 +1,77 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/*",
+    "apps/liem-wallpaper/crates/*",
+    "tests",
+]
+exclude = [
+    "apps/liem-wallpaper/crates/lw-setup",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Liem Wallpaper Contributors"]
+
+[workspace.dependencies]
+# Serialization/Deserialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.6", features = ["v4"] }
+toml = "0.8"
+
+# UI & Graphics (Slint and Win32)
+slint = "1.3"
+windows = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Direct3D",
+    "Win32_Graphics_Direct3D_Fxc",
+    "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Dxgi",
+    "Win32_Graphics_Dxgi_Common",
+    "Win32_Graphics_DirectComposition",
+    "Win32_Graphics_Gdi",
+    "Win32_Graphics_Imaging",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Com",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_System_Threading",
+    "Win32_System_Pipes",
+    "Win32_UI_Shell",
+    "Win32_System_Registry",
+    "Win32_Security",
+    "Win32_System_LibraryLoader",
+] }
+
+# Async Runtime
+tokio = { version = "1", features = ["full"] }
+
+# CLI Argument Parsing
+clap = { version = "4.4", features = ["derive"] }
+
+# Logging & Tracing
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Error Handling
+thiserror = "1.0"
+
+# Internal workspace crates (Liem Wallpaper sub-crates)
+lw-core = { path = "apps/liem-wallpaper/crates/lw-core" }
+lw-renderer = { path = "apps/liem-wallpaper/crates/lw-renderer" }
+lw-wallpaper = { path = "apps/liem-wallpaper/crates/lw-wallpaper" }
+lw-transition = { path = "apps/liem-wallpaper/crates/lw-transition" }
+lw-service = { path = "apps/liem-wallpaper/crates/lw-service" }
+lw = { path = "apps/liem-wallpaper/crates/lw-cli" }
+lw-plugin = { path = "apps/liem-wallpaper/crates/lw-plugin" }
+lw-setup = { path = "apps/liem-wallpaper/crates/lw-setup" }
+
+[workspace.lints.rust]
+unused_variables = "warn"
+
+[workspace.lints.clippy]
+all = "warn"
+pedantic = "warn"
+nursery = "warn"

@@ -1,0 +1,38 @@
+# Build artifacts
+/target
+/target/
+node_modules/
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.user
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.vcxproj
+
+# Temporary files
+.temp/
+*.tmp
+
+# Spec / Agent Tooling
+.specify/
+.agents/
+.rtk/
+.tldr/
+.tldrignore
+.docs/
+docs/
+specs/
+
+# Ignore all markdown files (as requested)
+*.md
+**/*.md
+
+# Exceptions
+!README.md
+!**/README.md
+!SHADERS.md
+!**/SHADERS.md

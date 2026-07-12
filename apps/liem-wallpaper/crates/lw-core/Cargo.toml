@@ -1,0 +1,22 @@
+[package]
+name = "lw-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+liem-config = { path = "../../../../crates/liem-config" }
+liem-common = { path = "../../../../crates/liem-common" }
+tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "apps_config_tests"
+path = "../../tests/config_tests.rs"

@@ -1,0 +1,14 @@
+[package]
+name = "lw-transition"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+lw-core = { workspace = true }
+lw-renderer = { workspace = true }
+windows = { workspace = true }
+tracing = { workspace = true }
+
+[lints]
+workspace = true

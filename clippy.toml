@@ -1,0 +1,5 @@
+# Clippy configuration file
+# For details on options, see: https://doc.rust-lang.org/clippy/configuration.html
+
+# Set the maximum cognitive complexity a function can have before clippy warns.
+cognitive-complexity-threshold = 30

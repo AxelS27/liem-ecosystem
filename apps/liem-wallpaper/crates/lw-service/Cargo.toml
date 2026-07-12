@@ -1,0 +1,21 @@
+[package]
+name = "lw-service"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+lw-core = { workspace = true }
+lw-renderer = { workspace = true }
+lw-wallpaper = { workspace = true }
+lw-transition = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+windows = { workspace = true }
+liem-common = { path = "../../../../crates/liem-common" }
+liem-ipc = { path = "../../../../crates/liem-ipc" }
+
+[lints]
+workspace = true
