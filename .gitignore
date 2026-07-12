@@ -1,6 +1,5 @@
 # Build artifacts
-/target
-/target/
+**/target/
 node_modules/
 
 # IDE and Editor files
