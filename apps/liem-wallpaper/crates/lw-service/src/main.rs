@@ -107,6 +107,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let config = Arc::new(Mutex::new(config_val));
 
+    // 3d. Spawn background configuration hot-reloader / file watcher
+    let watcher_config_path = config_path.clone();
+    let watcher_config = Arc::clone(&config);
+    tokio::spawn(async move {
+        let mut last_modified = std::fs::metadata(&watcher_config_path)
+            .and_then(|m| m.modified())
+            .ok();
+
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+            if let Ok(metadata) = std::fs::metadata(&watcher_config_path) {
+                if let Ok(modified) = metadata.modified() {
+                    if Some(modified) != last_modified {
+                        last_modified = Some(modified);
+                        tracing::info!("Configuration file modified on disk. Hot-reloading...");
+                        match lw_core::Config::load_from_file(&watcher_config_path) {
+                            Ok(new_cfg) => {
+                                let mut cfg = watcher_config.lock().unwrap();
+                                if *cfg != new_cfg {
+                                    *cfg = new_cfg;
+                                    tracing::info!("Configuration hot-reloaded successfully from disk.");
+                                }
+                            }
+                            Err(e) => {
+                                tracing::error!("Failed to reload modified configuration: {:?}", e);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+
     // 4. Create native COM desktop wallpaper manager
     let wallpaper_manager = Arc::new(DesktopWallpaperManager::new()?);
 

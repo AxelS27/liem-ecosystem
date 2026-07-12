@@ -3,7 +3,7 @@
 
 [Setup]
 AppName=Liem Desktop Ecosystem
-AppVersion=0.1.2
+AppVersion=0.1.3
 AppPublisher=Liem Ecosystem Contributors
 DefaultDirName={userpf}\Liem Ecosystem
 DefaultGroupName=Liem Desktop Ecosystem
